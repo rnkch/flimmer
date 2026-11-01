@@ -83,6 +83,7 @@ func New(cfg Config, st *store.Store, player *mpv.Player) *Service {
 		s.plMu.Lock()
 		s.streaming = ""
 		s.plMu.Unlock()
+		s.checkMpvVersion(ctx)
 		if err := s.Sync(ctx); err != nil {
 			slog.Error("initial playlist sync", "err", err)
 		}

@@ -8,12 +8,17 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # flimmer needs mpv 0.38 or newer (loadfile's index argument). Ubuntu's own
+    # mpv is older; Debian 13 has 0.40, the same as Raspberry Pi OS.
+    container: debian:trixie
     steps:
+      # The tests start a real mpv (no window: --vo=null) and encode with
+      # ffmpeg's libx264.
+      - run: apt-get update && apt-get install -y git ca-certificates mpv ffmpeg
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version-file: go/go.mod
-      # The tests start a real mpv (no window) and encode with ffmpeg's libx264.
-      - run: sudo apt-get update && sudo apt-get install -y mpv ffmpeg
+      - run: mpv --version | head -1 && ffmpeg -version | head -1
       - working-directory: go
         run: go vet ./... && go test ./...

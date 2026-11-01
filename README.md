@@ -30,7 +30,9 @@ still the best-tested setup ([deploy/raspberry-pi](deploy/raspberry-pi)).
 
 ## Requirements
 
-Linux with mpv (with DRM/KMS or a desktop session), ffmpeg/ffprobe,
+Linux with mpv **0.38 or newer** (with DRM/KMS or a desktop session; Debian 13
+and Raspberry Pi OS 13 have 0.40; older versions refuse playlist changes and
+flimmer says so in its log), ffmpeg/ffprobe,
 `heif-convert` for HEIC photos, yt-dlp for links, NetworkManager (`nmcli`)
 for the Wi-Fi settings. Building needs Go (see `go/go.mod`).
 

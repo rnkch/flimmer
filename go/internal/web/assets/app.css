@@ -314,6 +314,31 @@ wa-card.panel::part(body) {
   color: var(--wa-color-text-quiet);
 }
 
+/* Empty playlist: a dashed drop area with a hint and the way to add things.
+   Not the row grid of the entries. */
+.playlist > li.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--wa-space-xs);
+  margin: var(--wa-space-m);
+  padding: var(--wa-space-2xl) var(--wa-space-l);
+  border: 2px dashed var(--wa-color-surface-border);
+  border-radius: var(--wa-border-radius-l);
+  text-align: center;
+  color: var(--wa-color-text-quiet);
+}
+
+.playlist > li.empty-state .empty-icon {
+  font-size: 2.5rem;
+  color: var(--wa-color-brand-fill-loud);
+  opacity: 0.8;
+}
+
+.playlist > li.empty-state .wa-heading-s {
+  color: var(--wa-color-text-normal);
+}
+
 /* --- playlist: one line per entry --- */
 
 .playlist > li {

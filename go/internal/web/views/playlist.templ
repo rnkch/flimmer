@@ -36,7 +36,12 @@ templ PlaylistList(list []db.Media, currentID int64) {
 	<ul id="playlist" class="rows playlist" data-sortable
 		hx-get="/playlist/list" hx-trigger="playlist from:body, player from:body" hx-swap="outerMorph">
 		if len(list) == 0 {
-			<li class="empty">{ t(ctx, "The display is empty. Drop files here or") } <a href="/add">{ t(ctx, "add something") }</a>.</li>
+			<li class="empty-state">
+				<wa-icon name="film" class="empty-icon"></wa-icon>
+				<span class="wa-heading-s">{ t(ctx, "Nothing playing yet") }</span>
+				<span class="wa-caption-s">{ t(ctx, "Drop images or videos here, or add a file or link.") }</span>
+				<wa-button href="/add" variant="brand" size="s"><wa-icon slot="start" name="plus"></wa-icon> { t(ctx, "Add something") }</wa-button>
+			</li>
 		}
 		for _, m := range list {
 			@MediaRow(m, m.ID == currentID, "")

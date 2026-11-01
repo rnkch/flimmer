@@ -11,7 +11,7 @@ import (
 var german = map[string]string{
 	// layout, navigation, login
 	"Add":                                 "Hinzufügen",
-	"add something":                       "etwas hinzufügen",
+	"Add something":                       "Etwas hinzufügen",
 	"or":                                  "oder",
 	"Link: YouTube, video file, stream …": "Link: YouTube, Videodatei, Stream …",
 	"Display duration":                    "Anzeigedauer",
@@ -30,8 +30,9 @@ var german = map[string]string{
 	"No password set yet. Add %s to %s and restart the service.": "Noch kein Passwort gesetzt. %s in %s eintragen und den Dienst neu starten.",
 
 	// playlist
-	"Drop files here to insert them at this spot": "Dateien hierher ziehen, um sie an dieser Stelle einzufügen",
-	"The display is empty. Drop files here or":    "Das Schaufenster ist leer. Dateien hierher ziehen oder",
+	"Drop files here to insert them at this spot":        "Dateien hierher ziehen, um sie an dieser Stelle einzufügen",
+	"Nothing playing yet":                                "Noch nichts zu sehen",
+	"Drop images or videos here, or add a file or link.": "Bilder oder Videos hierher ziehen, oder eine Datei oder einen Link hinzufügen.",
 	"Loop %s":                          "Durchlauf %s",
 	"Drag to reorder":                  "Ziehen zum Sortieren",
 	"Playing":                          "Läuft",

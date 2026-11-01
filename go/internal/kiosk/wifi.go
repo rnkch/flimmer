@@ -21,7 +21,7 @@ import (
 // fallbackWifiName is the connection name of the always-saved fallback
 // network (Config.FallbackWifi), e.g. a phone hotspot staff can start when
 // the venue's Wi-Fi is unknown or gone.
-const fallbackWifiName = "flimmer-fallback"
+const fallbackWifiName = "flimmerkiste-fallback"
 
 var (
 	ErrWifiUnavailable  = errors.New("Wi-Fi can't be managed on this device")
@@ -170,15 +170,29 @@ func boolCmp(a, b bool) int {
 	return -1
 }
 
-// SaveWifi saves a network (or changes the password of a saved one). It does
-// not switch over: NetworkManager uses it automatically when the current
-// connection is gone, or right away with ConnectWifi.
-func (s *Service) SaveWifi(ctx context.Context, ssid, password string) error {
+// DefaultFallbackWifi is the "ssid:password" of the rescue network (a phone
+// hotspot to start) unless -fallback-wifi says otherwise. WPA needs a password
+// of 8 to 63 characters (TestDefaultFallbackWifi).
+const DefaultFallbackWifi = "flimmerkiste:flimmerkiste"
+
+// checkWifiCredentials applies the rules for a WPA network: an SSID of 1 to 32
+// bytes and a password of 8 to 63 characters (empty = open network).
+func checkWifiCredentials(ssid, password string) error {
 	if ssid == "" || len(ssid) > 32 {
 		return ErrWifiSSID
 	}
 	if password != "" && (len(password) < 8 || len(password) > 63) {
 		return ErrWifiPassword
+	}
+	return nil
+}
+
+// SaveWifi saves a network (or changes the password of a saved one). It does
+// not switch over: NetworkManager uses it automatically when the current
+// connection is gone, or right away with ConnectWifi.
+func (s *Service) SaveWifi(ctx context.Context, ssid, password string) error {
+	if err := checkWifiCredentials(ssid, password); err != nil {
+		return err
 	}
 	if fb, _, ok := s.fallbackWifi(); ok && ssid == fb {
 		return ErrWifiFallbackSSID
@@ -310,6 +324,10 @@ func (s *Service) fallbackWifi() (ssid, password string, ok bool) {
 func (s *Service) EnsureFallbackWifi(ctx context.Context) {
 	ssid, password, ok := s.fallbackWifi()
 	if !ok {
+		return
+	}
+	if err := checkWifiCredentials(ssid, password); err != nil {
+		s.Logf(ctx, slog.LevelWarn, "fallback Wi-Fi not saved: "+err.Error(), "ssid", ssid)
 		return
 	}
 	out, err := s.nmcli(ctx, "-t", "-f", "NAME", "connection", "show")

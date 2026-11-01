@@ -11,9 +11,9 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"fmt"
-	"github.com/rnkch/flimmer/internal/kiosk"
-	"github.com/rnkch/flimmer/internal/store/db"
-	"github.com/rnkch/flimmer/internal/sysinfo"
+	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/store/db"
+	"github.com/rnkch/flimmerkiste/internal/sysinfo"
 )
 
 func SystemPage(p Page, si sysinfo.Info, mediaBytes int64, events []db.Event, accessURL, fingerprint string) templ.Component {
@@ -803,7 +803,7 @@ func UpgradeCardLoading() templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "<wa-card id=\"upgrade\" hx-get=\"/system/upgrade\" hx-trigger=\"load\" hx-swap=\"outerHTML\"><div class=\"wa-stack wa-gap-3xs\"><span class=\"wa-caption-xs\">Flimmer</span> <wa-spinner></wa-spinner></div></wa-card>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 56, "<wa-card id=\"upgrade\" hx-get=\"/system/upgrade\" hx-trigger=\"load\" hx-swap=\"outerHTML\"><div class=\"wa-stack wa-gap-3xs\"><span class=\"wa-caption-xs\">Flimmerkiste</span> <wa-spinner></wa-spinner></div></wa-card>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -831,7 +831,7 @@ func UpgradeCard(info kiosk.UpgradeInfo, msg string) templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "<wa-card id=\"upgrade\"><div class=\"wa-split wa-align-items-center\"><div class=\"wa-stack wa-gap-3xs\"><span class=\"wa-caption-xs\">Flimmer</span> <span class=\"num\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 57, "<wa-card id=\"upgrade\"><div class=\"wa-split wa-align-items-center\"><div class=\"wa-stack wa-gap-3xs\"><span class=\"wa-caption-xs\">Flimmerkiste</span> <span class=\"num\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -959,9 +959,9 @@ func UpgradeCard(info kiosk.UpgradeInfo, msg string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var51 string
-			templ_7745c5c3_Var51, templ_7745c5c3_Err = templruntime.NewAttributeExpression(t(ctx, "Install %s now? Flimmer restarts: the screen goes dark for a few seconds and playback starts over; a running conversion or download starts over too.", info.Latest)).Resolve(ctx)
+			templ_7745c5c3_Var51, templ_7745c5c3_Err = templruntime.NewAttributeExpression(t(ctx, "Install %s now? Flimmerkiste restarts: the screen goes dark for a few seconds and playback starts over; a running conversion or download starts over too.", info.Latest)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/system.templ`, Line: 158, Col: 190}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/system.templ`, Line: 158, Col: 195}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var51)
 			if templ_7745c5c3_Err != nil {

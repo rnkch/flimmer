@@ -67,7 +67,7 @@ func upgradeEnv(t *testing.T, rel *fakeRelease) (s *Service, exe string) {
 				h := sha256.Sum256([]byte(rel.binary))
 				sum = hex.EncodeToString(h[:])
 			}
-			fmt.Fprintf(w, "%s  %s\n%s  flimmer-other-os\n", sum, platformAsset(), sum)
+			fmt.Fprintf(w, "%s  %s\n%s  flimmerkiste-other-os\n", sum, platformAsset(), sum)
 		default:
 			http.NotFound(w, r)
 		}
@@ -76,7 +76,7 @@ func upgradeEnv(t *testing.T, rel *fakeRelease) (s *Service, exe string) {
 
 	s, _ = newTestService(t)
 	dir := t.TempDir()
-	exe = filepath.Join(dir, "flimmer")
+	exe = filepath.Join(dir, "flimmerkiste")
 	if err := os.WriteFile(exe, []byte("#!/bin/sh\necho v0.2.0\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}

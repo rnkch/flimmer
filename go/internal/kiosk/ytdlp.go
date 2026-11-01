@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rnkch/flimmer/internal/store/db"
-	"github.com/rnkch/flimmer/internal/sysinfo"
+	"github.com/rnkch/flimmerkiste/internal/store/db"
+	"github.com/rnkch/flimmerkiste/internal/sysinfo"
 )
 
 var (

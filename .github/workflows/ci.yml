@@ -8,7 +8,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    # flimmer needs mpv 0.38 or newer (loadfile's index argument). Ubuntu's own
+    # flimmerkiste needs mpv 0.38 or newer (loadfile's index argument). Ubuntu's own
     # mpv is older; Debian 13 has 0.40, the same as Raspberry Pi OS.
     container: debian:trixie
     steps:

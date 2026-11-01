@@ -22,7 +22,7 @@ import (
 
 // Upgrades replace the running binary with the latest GitHub release.
 //
-// A release has one plain binary per platform ("flimmer-linux-arm64") and a
+// A release has one plain binary per platform ("flimmerkiste-linux-arm64") and a
 // "checksums.txt" in sha256sum format (see .github/workflows/release.yml). The
 // download is only installed when its SHA-256 matches that file and the new
 // binary reports the release's version. The old binary stays next to it as
@@ -30,7 +30,7 @@ import (
 // it puts the old one back by itself (CheckPendingUpgrade).
 
 // DefaultUpdateRepo is where releases are looked up unless -update-repo says otherwise.
-const DefaultUpdateRepo = "rnkch/flimmer"
+const DefaultUpdateRepo = "rnkch/flimmerkiste"
 
 const (
 	defaultUpdateAPI = "https://api.github.com"
@@ -90,7 +90,7 @@ type upgradeState struct {
 }
 
 // platformAsset is the file name of this platform's binary in a release.
-func platformAsset() string { return "flimmer-" + runtime.GOOS + "-" + runtime.GOARCH }
+func platformAsset() string { return "flimmerkiste-" + runtime.GOOS + "-" + runtime.GOARCH }
 
 // parseVersion reads "v1.2.3" or "1.2.3-rc1" (the suffix is ignored).
 func parseVersion(v string) (n [3]int, ok bool) {
@@ -149,7 +149,7 @@ func (s *Service) httpGet(ctx context.Context, url string, accept string) (*http
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "flimmer/"+Version())
+	req.Header.Set("User-Agent", "flimmerkiste/"+Version())
 	if accept != "" {
 		req.Header.Set("Accept", accept)
 	}

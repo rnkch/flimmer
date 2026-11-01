@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rnkch/flimmer/internal/sysinfo"
+	"github.com/rnkch/flimmerkiste/internal/sysinfo"
 )
 
 // Without a language in the context the views render German (the fallback).

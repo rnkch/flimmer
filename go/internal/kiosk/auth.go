@@ -12,7 +12,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/rnkch/flimmer/internal/store/db"
+	"github.com/rnkch/flimmerkiste/internal/store/db"
 )
 
 const SessionTTL = 30 * 24 * time.Hour

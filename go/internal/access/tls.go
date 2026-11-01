@@ -117,7 +117,7 @@ func generate(names []string, ips []net.IP, certPath, keyPath string) (*tls.Cert
 	now := time.Now()
 	tmpl := &x509.Certificate{
 		SerialNumber:          serial,
-		Subject:               pkix.Name{CommonName: "Flimmer", Organization: []string{"Flimmer"}},
+		Subject:               pkix.Name{CommonName: "Flimmerkiste", Organization: []string{"Flimmerkiste"}},
 		NotBefore:             now.Add(-time.Hour),
 		NotAfter:              now.Add(certValidity),
 		KeyUsage:              x509.KeyUsageDigitalSignature,

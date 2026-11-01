@@ -22,12 +22,12 @@ import (
 
 	"github.com/a-h/templ"
 
-	"github.com/rnkch/flimmer/internal/access"
-	"github.com/rnkch/flimmer/internal/kiosk"
-	"github.com/rnkch/flimmer/internal/store/db"
-	"github.com/rnkch/flimmer/internal/sysinfo"
-	"github.com/rnkch/flimmer/internal/web/i18n"
-	"github.com/rnkch/flimmer/internal/web/views"
+	"github.com/rnkch/flimmerkiste/internal/access"
+	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/store/db"
+	"github.com/rnkch/flimmerkiste/internal/sysinfo"
+	"github.com/rnkch/flimmerkiste/internal/web/i18n"
+	"github.com/rnkch/flimmerkiste/internal/web/views"
 )
 
 // --- helpers ----------------------------------------------------------------
@@ -622,7 +622,7 @@ func (s *Server) systemRestart(w http.ResponseWriter, r *http.Request) {
 	toast(w, "success", i18n.T(r.Context(), "Restarting… the page reconnects by itself in a few seconds."))
 }
 
-// upgradeShow is the Flimmer card: what runs and whether a newer release
+// upgradeShow is the Flimmerkiste card: what runs and whether a newer release
 // exists. ?check=1 asks GitHub again instead of using the answer from the
 // last few minutes.
 func (s *Server) upgradeShow(w http.ResponseWriter, r *http.Request) {
@@ -649,7 +649,7 @@ func (s *Server) upgradeInstall(w http.ResponseWriter, r *http.Request) {
 	if res.Restarted {
 		toast(w, "success", i18n.T(r.Context(), "Restarting… the page reconnects by itself in a few seconds."))
 	} else {
-		toast(w, "warning", i18n.T(r.Context(), "%s is installed. Restart flimmer to run it.", res.To))
+		toast(w, "warning", i18n.T(r.Context(), "%s is installed. Restart flimmerkiste to run it.", res.To))
 	}
 	w.WriteHeader(http.StatusNoContent)
 }

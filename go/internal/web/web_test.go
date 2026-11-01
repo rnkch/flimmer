@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rnkch/flimmer/internal/kiosk"
-	"github.com/rnkch/flimmer/internal/mpv"
-	"github.com/rnkch/flimmer/internal/store"
+	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/mpv"
+	"github.com/rnkch/flimmerkiste/internal/store"
 )
 
 func newServer(t *testing.T) (*Server, *kiosk.Service) {

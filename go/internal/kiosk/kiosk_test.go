@@ -17,9 +17,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rnkch/flimmer/internal/mpv"
-	"github.com/rnkch/flimmer/internal/store"
-	"github.com/rnkch/flimmer/internal/store/db"
+	"github.com/rnkch/flimmerkiste/internal/mpv"
+	"github.com/rnkch/flimmerkiste/internal/store"
+	"github.com/rnkch/flimmerkiste/internal/store/db"
 )
 
 func newTestService(t *testing.T) (*Service, *mpv.Player) {

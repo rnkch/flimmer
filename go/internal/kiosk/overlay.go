@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rnkch/flimmer/internal/access"
+	"github.com/rnkch/flimmerkiste/internal/access"
 )
 
 // The QR code overlay on the screen: mpv draws a BGRA bitmap (overlay-add)

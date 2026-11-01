@@ -19,8 +19,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rnkch/flimmer/internal/store/db"
-	"github.com/rnkch/flimmer/internal/sysinfo"
+	"github.com/rnkch/flimmerkiste/internal/store/db"
+	"github.com/rnkch/flimmerkiste/internal/sysinfo"
 )
 
 // Caption is the upload caption format documented in the help text:

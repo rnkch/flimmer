@@ -19,8 +19,8 @@ import (
 	tg "github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 
-	"github.com/rnkch/flimmer/internal/access"
-	"github.com/rnkch/flimmer/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/access"
+	"github.com/rnkch/flimmerkiste/internal/kiosk"
 )
 
 const pageSize = 5
@@ -74,7 +74,7 @@ func (bt *Bot) Run(ctx context.Context) {
 		{Command: "debug", Description: "Debug-Modus"},
 		{Command: "help", Description: "Hilfe"},
 	}})
-	bt.send(ctx, "📺 Flimmer ist wieder online! (Version "+kiosk.Version()+")", nil)
+	bt.send(ctx, "📺 Flimmerkiste ist wieder online! (Version "+kiosk.Version()+")", nil)
 	go bt.watchJobs(ctx)
 	bt.b.Start(ctx)
 }
@@ -245,7 +245,7 @@ func (bt *Bot) upgrade(ctx context.Context, m *models.Message, arg string) {
 		bt.reply(ctx, m, "⚠️ Prüfen fehlgeschlagen: "+err.Error())
 		return
 	case !info.Newer:
-		bt.reply(ctx, m, "✅ Flimmer ist aktuell ("+info.Current+").")
+		bt.reply(ctx, m, "✅ Flimmerkiste ist aktuell ("+info.Current+").")
 		return
 	case !info.CanInstall:
 		bt.reply(ctx, m, fmt.Sprintf("ℹ️ Version %s ist da, hat aber keinen Download für dieses Gerät.\n%s", info.Latest, info.URL))
@@ -261,9 +261,9 @@ func (bt *Bot) upgrade(ctx context.Context, m *models.Message, arg string) {
 	case err != nil:
 		bt.reply(ctx, m, "⚠️ Nicht aktualisiert: "+upgradeErrText(err))
 	case res.Restarted:
-		bt.reply(ctx, m, "✅ "+res.To+" ist installiert, Flimmer startet neu und meldet sich gleich wieder.")
+		bt.reply(ctx, m, "✅ "+res.To+" ist installiert, Flimmerkiste startet neu und meldet sich gleich wieder.")
 	default:
-		bt.reply(ctx, m, "✅ "+res.To+" ist installiert. Flimmer muss von Hand neu gestartet werden.")
+		bt.reply(ctx, m, "✅ "+res.To+" ist installiert. Flimmerkiste muss von Hand neu gestartet werden.")
 	}
 }
 
@@ -419,7 +419,7 @@ func (bt *Bot) showMenu(ctx context.Context, m *models.Message) {
 		},
 		ResizeKeyboard: true,
 	}
-	bt.sendMarkup(ctx, m.Chat.ID, "Flimmer", kb)
+	bt.sendMarkup(ctx, m.Chat.ID, "Flimmerkiste", kb)
 }
 
 // --- uploads ----------------------------------------------------------------

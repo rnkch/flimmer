@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rnkch/flimmer/internal/store/db"
+	"github.com/rnkch/flimmerkiste/internal/store/db"
 )
 
 func TestTrimJobsAndEvents(t *testing.T) {

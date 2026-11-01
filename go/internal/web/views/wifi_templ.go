@@ -9,7 +9,7 @@ package views
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "github.com/rnkch/flimmer/internal/kiosk"
+import "github.com/rnkch/flimmerkiste/internal/kiosk"
 
 // WifiCard: saved networks and networks in range (loaded after the page,
 // a scan takes a moment), plus a form to add one. Picking a network in range

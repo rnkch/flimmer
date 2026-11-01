@@ -9,7 +9,7 @@ package views
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "github.com/rnkch/flimmer/internal/store/db"
+import "github.com/rnkch/flimmerkiste/internal/store/db"
 
 // AddPage: one form for both sources. Pick files or check a link; name,
 // position and display duration apply to either; the buttons follow the source.

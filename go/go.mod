@@ -1,4 +1,4 @@
-module github.com/rnkch/flimmer
+module github.com/rnkch/flimmerkiste
 
 go 1.27.1
 

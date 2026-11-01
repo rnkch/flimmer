@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/rnkch/flimmer/internal/store/db"
+	"github.com/rnkch/flimmerkiste/internal/store/db"
 )
 
 // Thumbnail returns the path of a small JPEG preview, creating it on first use.

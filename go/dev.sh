@@ -1,10 +1,10 @@
 #!/bin/bash
-# Runs flimmer locally for development: no Telegram, sample media,
+# Runs flimmerkiste locally for development: no Telegram, sample media,
 # web UI on http://127.0.0.1:8090 with the local test password below.
 # Not for the Pi (deploy.sh builds and ships the real binary).
 set -e
 cd "$(dirname "$0")"
-DIR=${FLIMMER_DEV_DIR:-/tmp/flimmer-dev}
+DIR=${FLIMMERKISTE_DEV_DIR:-/tmp/flimmerkiste-dev}
 mkdir -p "$DIR/media" "$DIR/samples"
 # Sample files to drag into the web UI (Add page or onto the playlist).
 if [ -z "$(ls -A "$DIR/samples")" ]; then
@@ -22,7 +22,7 @@ mkdir -p "$FAKE_NMCLI_DIR"
 go tool templ generate ./internal/web/views >/dev/null
 # Local test password only; otherwise WEB_PASSWORD in the credentials file
 # (or a generated one, logged at the first start).
-export FLIMMER_WEB_PASSWORD=${FLIMMER_WEB_PASSWORD:-flimmer-dev-password}
-exec go run ./cmd/flimmer -credentials "" -listen 127.0.0.1:8090 -listen-tls 127.0.0.1:8453 \
+export FLIMMERKISTE_WEB_PASSWORD=${FLIMMERKISTE_WEB_PASSWORD:-flimmerkiste-dev-password}
+exec go run ./cmd/flimmerkiste -credentials "" -listen 127.0.0.1:8090 -listen-tls 127.0.0.1:8453 \
     -media "$DIR/media" -data "$DIR/data" -mpv-socket "$DIR/mpv.sock" \
     -encoder libx264 -nmcli "bash internal/kiosk/testdata/fake-nmcli" -mpv-args "${MPV_ARGS:---no-config --vo=null --ao=null}" "$@"

@@ -17,7 +17,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/rnkch/flimmer/internal/web/bundle"
+	"github.com/rnkch/flimmerkiste/internal/web/bundle"
 )
 
 type pkg struct {

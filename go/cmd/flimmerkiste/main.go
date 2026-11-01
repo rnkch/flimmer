@@ -1,4 +1,4 @@
-// Command flimmer turns a screen into a looping display: mpv, the ingest
+// Command flimmerkiste turns a screen into a looping display: mpv, the ingest
 // queue, the Telegram bot and the web UI in one process.
 package main
 
@@ -16,29 +16,29 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/rnkch/flimmer/internal/access"
-	"github.com/rnkch/flimmer/internal/bot"
-	"github.com/rnkch/flimmer/internal/kiosk"
-	"github.com/rnkch/flimmer/internal/mpv"
-	"github.com/rnkch/flimmer/internal/store"
-	"github.com/rnkch/flimmer/internal/web"
+	"github.com/rnkch/flimmerkiste/internal/access"
+	"github.com/rnkch/flimmerkiste/internal/bot"
+	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/mpv"
+	"github.com/rnkch/flimmerkiste/internal/store"
+	"github.com/rnkch/flimmerkiste/internal/web"
 )
 
 func main() {
 	home, _ := os.UserHomeDir()
 	var (
-		dataDir   = flag.String("data", home+"/.local/share/flimmer", "database, temp files, thumbnails and the HTTPS certificate")
+		dataDir   = flag.String("data", home+"/.local/share/flimmerkiste", "database, temp files, thumbnails and the HTTPS certificate")
 		mediaDir  = flag.String("media", "", "media directory (default <data>/media)")
-		creds     = flag.String("credentials", home+"/.config/flimmer/credentials", "BOT_TOKEN / GROUP_ID / WEB_PASSWORD file (optional; without a bot token no Telegram)")
+		creds     = flag.String("credentials", home+"/.config/flimmerkiste/credentials", "BOT_TOKEN / GROUP_ID / WEB_PASSWORD file (optional; without a bot token no Telegram)")
 		listen    = flag.String("listen", "127.0.0.1:8080,tailscale:8080", "web UI addresses, comma separated; tailscale:PORT = all Tailscale IPs; empty = off")
 		listenTLS = flag.String("listen-tls", ":8443", "HTTPS address for the local network (self-signed certificate); empty = off")
 		publicURL = flag.String("public-url", "", "address shown in the QR code; default https://<LAN IP>:<port>")
-		socket    = flag.String("mpv-socket", "/tmp/flimmer-mpv.sock", "mpv IPC socket")
+		socket    = flag.String("mpv-socket", "/tmp/flimmerkiste-mpv.sock", "mpv IPC socket")
 		mpvArgs   = flag.String("mpv-args", "", "extra mpv arguments, space separated")
 		encoder   = flag.String("encoder", "h264_v4l2m2m", "ffmpeg H.264 encoder")
 		hdmiFlag  = flag.String("hdmi-flag", home+"/.needs-hdmi", "file whose existence selects HDMI output")
 		nmcli     = flag.String("nmcli", "sudo -n nmcli", "NetworkManager CLI for the Wi-Fi settings, space separated; empty = off")
-		fallback  = flag.String("fallback-wifi", "flimmer:flimmer", "ssid:password saved once as the lowest-priority Wi-Fi (e.g. a phone hotspot); empty = none")
+		fallback  = flag.String("fallback-wifi", kiosk.DefaultFallbackWifi, "ssid:password saved once as the lowest-priority Wi-Fi (e.g. a phone hotspot); empty = none")
 		updRepo   = flag.String("update-repo", kiosk.DefaultUpdateRepo, "GitHub owner/name whose releases the web UI and /upgrade install; empty = updates off")
 		showVer   = flag.Bool("version", false, "print the version and exit")
 		debugLog  = flag.Bool("v", false, "debug logging")
@@ -53,7 +53,7 @@ func main() {
 	}
 
 	// Logs go to stderr; under systemd that is the journal, which stamps and
-	// rotates them (journalctl -u flimmer). The journal has its own
+	// rotates them (journalctl -u flimmerkiste). The journal has its own
 	// timestamps, so slog's are dropped there.
 	opts := &slog.HandlerOptions{Level: slog.LevelInfo}
 	if *debugLog {
@@ -86,7 +86,7 @@ func run(mediaDir, dataDir, credsPath, listen, listenTLS, publicURL, socket, mpv
 			return err
 		}
 	}
-	st, err := store.Open(ctx, filepath.Join(dataDir, "flimmer.db"))
+	st, err := store.Open(ctx, filepath.Join(dataDir, "flimmerkiste.db"))
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func run(mediaDir, dataDir, credsPath, listen, listenTLS, publicURL, socket, mpv
 		return errors.New("the new version didn't stay up; went back to the previous one")
 	}
 	k.SyncLockFile(ctx)
-	slog.Info("flimmer starting", "media", mediaDir, "hdmi", cfg.HDMI)
+	slog.Info("flimmerkiste starting", "media", mediaDir, "hdmi", cfg.HDMI)
 
 	creds := map[string]string{}
 	if credsPath != "" {
@@ -132,11 +132,11 @@ func run(mediaDir, dataDir, credsPath, listen, listenTLS, publicURL, socket, mpv
 		}
 	}
 	// The first web password comes from the credentials file (or, for local
-	// runs, FLIMMER_WEB_PASSWORD); later changes are made in the web UI.
+	// runs, FLIMMERKISTE_WEB_PASSWORD); later changes are made in the web UI.
 	// Without one, a random password is generated and logged once.
 	pw := creds["WEB_PASSWORD"]
 	if pw == "" {
-		pw = os.Getenv("FLIMMER_WEB_PASSWORD")
+		pw = os.Getenv("FLIMMERKISTE_WEB_PASSWORD")
 	}
 	if !k.HasWebPassword(ctx) {
 		if pw != "" {

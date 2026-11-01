@@ -13,9 +13,9 @@ import (
 
 	"github.com/a-h/templ"
 
-	"github.com/rnkch/flimmer/internal/kiosk"
-	"github.com/rnkch/flimmer/internal/store/db"
-	"github.com/rnkch/flimmer/internal/web/i18n"
+	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/store/db"
+	"github.com/rnkch/flimmerkiste/internal/web/i18n"
 )
 
 // t translates an English UI string for the request's language.

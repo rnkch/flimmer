@@ -12,7 +12,7 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"strings"
 
-	"github.com/rnkch/flimmer/internal/web/i18n"
+	"github.com/rnkch/flimmerkiste/internal/web/i18n"
 )
 
 // head is shared by every page, including login.
@@ -46,7 +46,7 @@ func head(title, css, js string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " · Flimmer</title><!-- Follow the OS color scheme before first paint (theme.css has both). --><script>document.documentElement.classList.add(matchMedia('(prefers-color-scheme: dark)').matches ? 'wa-dark' : 'wa-light')</script><link rel=\"stylesheet\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " · Flimmerkiste</title><!-- Follow the OS color scheme before first paint (theme.css has both). --><script>document.documentElement.classList.add(matchMedia('(prefers-color-scheme: dark)').matches ? 'wa-dark' : 'wa-light')</script><link rel=\"stylesheet\" href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1072,7 +1072,7 @@ func Login(css, js, errMsg string, noPassword bool) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "\"><main class=\"login\"><wa-card><form method=\"post\" action=\"/login\" class=\"wa-stack\"><div class=\"wa-split\"><h1 class=\"wa-heading-m\"><wa-icon name=\"tv\"></wa-icon> Flimmer</h1>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "\"><main class=\"login\"><wa-card><form method=\"post\" action=\"/login\" class=\"wa-stack\"><div class=\"wa-split\"><h1 class=\"wa-heading-m\"><wa-icon name=\"tv\"></wa-icon> Flimmerkiste</h1>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1089,7 +1089,7 @@ func Login(css, js, errMsg string, noPassword bool) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templ.Raw(t(ctx, "No password set yet. Add %s to %s and restart the service.", "<code>WEB_PASSWORD=…</code>", "<code>~/.config/flimmer/credentials</code>")).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = templ.Raw(t(ctx, "No password set yet. Add %s to %s and restart the service.", "<code>WEB_PASSWORD=…</code>", "<code>~/.config/flimmerkiste/credentials</code>")).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

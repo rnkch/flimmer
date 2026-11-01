@@ -21,7 +21,7 @@ func newWifiService(t *testing.T, scan string) (*Service, string) {
 	os.WriteFile(filepath.Join(dir, "scan"), []byte(scan), 0o644)
 	fake, _ := filepath.Abs("testdata/fake-nmcli")
 	s.cfg.Nmcli = []string{"bash", fake}
-	s.cfg.FallbackWifi = "flimmer:flimmer"
+	s.cfg.FallbackWifi = "flimmerkiste:flimmerkiste"
 	return s, dir
 }
 
@@ -49,14 +49,14 @@ func TestFallbackWifiOnce(t *testing.T) {
 			adds = append(adds, c)
 		}
 	}
-	if len(adds) != 1 || !strings.Contains(adds[0], "con-name flimmer-fallback ssid flimmer") ||
+	if len(adds) != 1 || !strings.Contains(adds[0], "con-name flimmerkiste-fallback ssid flimmerkiste") ||
 		!strings.Contains(adds[0], "connection.autoconnect-priority -10") {
 		t.Fatalf("adds: %q", adds)
 	}
 }
 
 func TestWifiNetworksAndSave(t *testing.T) {
-	s, dir := newWifiService(t, "Kino\\:Foyer:72:WPA2\nKino\\:Foyer:30:WPA2\nCafe:40:\nUni:55:WPA2 802.1X\nNeu:20:WPA3\n:80:WPA2\nflimmer:90:WPA2\n")
+	s, dir := newWifiService(t, "Kino\\:Foyer:72:WPA2\nKino\\:Foyer:30:WPA2\nCafe:40:\nUni:55:WPA2 802.1X\nNeu:20:WPA3\n:80:WPA2\nflimmerkiste:90:WPA2\n")
 	ctx := context.Background()
 	s.EnsureFallbackWifi(ctx)
 
@@ -77,7 +77,7 @@ func TestWifiNetworksAndSave(t *testing.T) {
 		{strings.Repeat("x", 33), "geheim123", ErrWifiSSID},
 		{"Kurz", "1234567", ErrWifiPassword},
 		{"Uni", "geheim123", ErrWifiEnterprise},
-		{"flimmer", "geheim123", ErrWifiFallbackSSID},
+		{"flimmerkiste", "geheim123", ErrWifiFallbackSSID},
 	} {
 		if err := s.SaveWifi(ctx, c.ssid, c.pw); !errors.Is(err, c.err) {
 			t.Errorf("SaveWifi(%q): %v, want %v", c.ssid, err, c.err)
@@ -111,7 +111,7 @@ func TestWifiNetworksAndSave(t *testing.T) {
 		got = append(got, n.SSID)
 	}
 	// saved by signal, fallback last among saved, then the rest by signal; no hidden network
-	want := []string{"Kino:Foyer", "Cafe", "Neu", "flimmer", "Uni"}
+	want := []string{"Kino:Foyer", "Cafe", "Neu", "flimmerkiste", "Uni"}
 	if !slices.Equal(got, want) {
 		t.Fatalf("order %q, want %q", got, want)
 	}
@@ -166,5 +166,20 @@ func TestWifiUnavailable(t *testing.T) {
 	s.cfg.Nmcli = nil
 	if _, err := s.WifiNetworks(context.Background(), false); !errors.Is(err, ErrWifiUnavailable) {
 		t.Fatalf("%v", err)
+	}
+}
+
+// A fallback password under 8 characters is refused by NetworkManager and the
+// rescue network is silently missing: the default must be valid.
+func TestDefaultFallbackWifi(t *testing.T) {
+	ssid, password, ok := strings.Cut(DefaultFallbackWifi, ":")
+	if !ok {
+		t.Fatalf("%q is not ssid:password", DefaultFallbackWifi)
+	}
+	if err := checkWifiCredentials(ssid, password); err != nil {
+		t.Fatalf("default fallback Wi-Fi %q: %v", DefaultFallbackWifi, err)
+	}
+	if err := checkWifiCredentials("hotspot", "short"); !errors.Is(err, ErrWifiPassword) {
+		t.Fatalf("a 5-character password was accepted: %v", err)
 	}
 }

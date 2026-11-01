@@ -13,8 +13,8 @@ import (
 	tg "github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 
-	"github.com/rnkch/flimmer/internal/kiosk"
-	"github.com/rnkch/flimmer/internal/sysinfo"
+	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/sysinfo"
 )
 
 // Callback data: "page:<n>", "slide:<id>", "act:<action>:<id>".

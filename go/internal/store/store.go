@@ -9,7 +9,7 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"github.com/rnkch/flimmer/internal/store/db"
+	"github.com/rnkch/flimmerkiste/internal/store/db"
 )
 
 //go:generate go tool sqlc generate -f ../../sqlc.yaml

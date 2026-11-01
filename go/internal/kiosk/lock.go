@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/rnkch/flimmer/internal/store/db"
+	"github.com/rnkch/flimmerkiste/internal/store/db"
 )
 
 // SettingLocked: while "true", nothing that would interrupt what is on the

@@ -16,11 +16,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rnkch/flimmer/internal/access"
-	"github.com/rnkch/flimmer/internal/kiosk"
-	"github.com/rnkch/flimmer/internal/web/bundle"
-	"github.com/rnkch/flimmer/internal/web/i18n"
-	"github.com/rnkch/flimmer/internal/web/views"
+	"github.com/rnkch/flimmerkiste/internal/access"
+	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/web/bundle"
+	"github.com/rnkch/flimmerkiste/internal/web/i18n"
+	"github.com/rnkch/flimmerkiste/internal/web/views"
 )
 
 //go:embed assets vendor

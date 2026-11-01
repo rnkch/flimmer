@@ -14,8 +14,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/rnkch/flimmer/internal/mpv"
-	"github.com/rnkch/flimmer/internal/store/db"
+	"github.com/rnkch/flimmerkiste/internal/mpv"
+	"github.com/rnkch/flimmerkiste/internal/store/db"
 )
 
 func (s *Service) List(ctx context.Context) ([]db.Media, error) { return s.st.ListMedia(ctx) }
@@ -378,7 +378,7 @@ func (s *Service) RestartService(ctx context.Context) error {
 	s.Logf(ctx, slog.LevelInfo, "service restart requested")
 	go func() {
 		time.Sleep(500 * time.Millisecond)
-		out, err := exec.Command("sudo", "-n", "systemctl", "--no-block", "restart", "flimmer.service").CombinedOutput()
+		out, err := exec.Command("sudo", "-n", "systemctl", "--no-block", "restart", "flimmerkiste.service").CombinedOutput()
 		if err != nil && !stoppedByRestart(err) {
 			s.Logf(context.Background(), slog.LevelError, "service restart failed", "err", err, "out", strings.TrimSpace(string(out)))
 		}

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rnkch/flimmer/internal/store/db"
+	"github.com/rnkch/flimmerkiste/internal/store/db"
 )
 
 // Server-rendered progress bars must carry the --percentage style that

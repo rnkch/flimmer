@@ -1,6 +1,6 @@
 #!/bin/bash
 # Run once on a fresh Raspberry Pi OS (64-bit) before the first deploy.sh:
-# installs mpv, ffmpeg and the tools flimmer calls.
+# installs mpv, ffmpeg and the tools flimmerkiste calls.
 set -e
 
 echo "=== Installing dependencies ==="
@@ -17,7 +17,7 @@ echo "=== Installing yt-dlp and deno (URL downloads) ==="
 # Official standalone yt-dlp: includes YouTube's challenge scripts (yt-dlp-ejs),
 # updates itself (yt-dlp -U, also from the web UI). Deno is the JavaScript
 # runtime yt-dlp needs for YouTube. Both go to ~/.local/bin, which the
-# service has on its PATH (flimmer.service). Checksums are verified.
+# service has on its PATH (flimmerkiste.service). Checksums are verified.
 BIN=$HOME/.local/bin
 mkdir -p "$BIN"
 TMP=$(mktemp -d)

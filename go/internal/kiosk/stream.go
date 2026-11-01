@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rnkch/flimmer/internal/mpv"
-	"github.com/rnkch/flimmer/internal/store/db"
+	"github.com/rnkch/flimmerkiste/internal/mpv"
+	"github.com/rnkch/flimmerkiste/internal/store/db"
 )
 
 // Streams are playlist entries without a file: mpv plays the URL directly

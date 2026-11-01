@@ -3,7 +3,7 @@ package views
 import (
 	"strings"
 
-	"github.com/rnkch/flimmer/internal/web/i18n"
+	"github.com/rnkch/flimmerkiste/internal/web/i18n"
 )
 
 // head is shared by every page, including login.
@@ -11,7 +11,7 @@ templ head(title, css, js string) {
 	<meta charset="utf-8"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
 	<meta name="htmx-config" content='{"extensions": "sse, alpine-compat"}'/>
-	<title>{ title } · Flimmer</title>
+	<title>{ title } · Flimmerkiste</title>
 	<!-- Follow the OS color scheme before first paint (theme.css has both). -->
 	<script>document.documentElement.classList.add(matchMedia('(prefers-color-scheme: dark)').matches ? 'wa-dark' : 'wa-light')</script>
 	<link rel="stylesheet" href={ "/static/" + css }/>
@@ -186,13 +186,13 @@ templ Login(css, js, errMsg string, noPassword bool) {
 				<wa-card>
 					<form method="post" action="/login" class="wa-stack">
 						<div class="wa-split">
-							<h1 class="wa-heading-m"><wa-icon name="tv"></wa-icon> Flimmer</h1>
+							<h1 class="wa-heading-m"><wa-icon name="tv"></wa-icon> Flimmerkiste</h1>
 							@langSwitch()
 						</div>
 						if noPassword {
 							<wa-callout variant="warning">
 								<wa-icon slot="icon" name="circle-exclamation"></wa-icon>
-								@templ.Raw(t(ctx, "No password set yet. Add %s to %s and restart the service.", "<code>WEB_PASSWORD=…</code>", "<code>~/.config/flimmer/credentials</code>"))
+								@templ.Raw(t(ctx, "No password set yet. Add %s to %s and restart the service.", "<code>WEB_PASSWORD=…</code>", "<code>~/.config/flimmerkiste/credentials</code>"))
 							</wa-callout>
 						} else {
 							<wa-input type="password" name="password" label={ t(ctx, "Password") } autocomplete="current-password" required autofocus password-toggle></wa-input>

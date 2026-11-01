@@ -9,7 +9,7 @@ package views
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "github.com/rnkch/flimmer/internal/store/db"
+import "github.com/rnkch/flimmerkiste/internal/store/db"
 
 func PlaylistPage(p Page, list []db.Media, currentID int64, activeJobs int) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {

@@ -2,9 +2,17 @@ package kiosk
 
 import "runtime/debug"
 
-// Version is the git commit the binary was built from, e.g. "e9a221e" or
-// "e9a221e+dirty"; "dev" when the build has no VCS information (go run).
+// releaseVersion is set when a release is built (-ldflags "-X
+// github.com/rnkch/flimmer/internal/kiosk.releaseVersion=v1.2.3").
+var releaseVersion string
+
+// Version is the release the binary was built as ("v1.2.3"), else the git
+// commit it was built from, e.g. "e9a221e" or "e9a221e+dirty"; "dev" when the
+// build has no VCS information (go run).
 func Version() string {
+	if releaseVersion != "" {
+		return releaseVersion
+	}
 	bi, ok := debug.ReadBuildInfo()
 	if !ok {
 		return "dev"

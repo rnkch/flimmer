@@ -100,6 +100,8 @@ func (s *Server) Handler() http.Handler {
 	app.HandleFunc("GET /system", s.systemPage)
 	app.HandleFunc("GET /system/stats", s.systemStats)
 	app.HandleFunc("GET /system/log", s.systemLog)
+	app.HandleFunc("GET /system/upgrade", s.upgradeShow)
+	app.HandleFunc("POST /system/upgrade", s.upgradeInstall)
 	app.HandleFunc("GET /system/ytdlp", s.systemYtDlp)
 	app.HandleFunc("POST /system/restart", s.systemRestart)
 	app.HandleFunc("GET /qr.png", s.qrPNG)

@@ -68,6 +68,39 @@ to reach a device whose Wi-Fi is gone.
 service and the boot files (composite PAL by default, HDMI when
 `~/.needs-hdmi` exists on the Pi) and restarts flimmer.
 
+## Releases and upgrades
+
+A release is a Git tag. Pushing one builds the binaries and publishes them
+(`.github/workflows/release.yml`):
+
+```bash
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+Each release has `flimmer-linux-arm64`, `flimmer-linux-amd64` and
+`checksums.txt`. A tag with a suffix (`v0.2.0-rc1`) is a pre-release, which
+upgrades ignore.
+
+A running flimmer installs the latest release itself: the **Flimmer** card on
+the System page, or `/upgrade` in Telegram (`/upgrade jetzt` installs).
+
+- It only asks GitHub (`api.github.com`, so GitHub sees the device's address)
+  when someone opens the System page or runs `/upgrade`, never by itself.
+- The download is installed only if its SHA-256 matches `checksums.txt` and
+  the new binary reports the release's version. The checksums come from the
+  same release, so they guard against a broken download, not against someone
+  who can publish on the GitHub account.
+- The old binary stays next to it as `flimmer.prev`. A new version that
+  crashes twice before it has been up for a minute is replaced by the old one
+  again. The database isn't rolled back: say so in the release notes when a
+  release changes it incompatibly.
+- It restarts the systemd service (the screen goes dark for a few seconds),
+  and is refused while playback is locked.
+- A build from source (`deploy.sh`, `go run`) reports a commit instead of a
+  version; any release counts as newer than it.
+- `-update-repo owner/name` follows another repository's releases (a fork),
+  `-update-repo ""` switches upgrades off.
+
 ## Development
 
 ```bash

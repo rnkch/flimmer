@@ -142,6 +142,20 @@ func errText(ctx context.Context, err error) string {
 		return i18n.T(ctx, "The name can have at most %d characters", kiosk.DisplayNameMax)
 	case errors.Is(err, kiosk.ErrLocked):
 		return i18n.T(ctx, "Locked: this would interrupt playback. Unlock it at the top.")
+	case errors.Is(err, kiosk.ErrUpgradeOff):
+		return i18n.T(ctx, "Updates are switched off")
+	case errors.Is(err, kiosk.ErrNoRelease):
+		return i18n.T(ctx, "No release has been published yet")
+	case errors.Is(err, kiosk.ErrUpToDate):
+		return i18n.T(ctx, "Already up to date")
+	case errors.Is(err, kiosk.ErrUpgradeBusy):
+		return i18n.T(ctx, "An update is already running")
+	case errors.Is(err, kiosk.ErrNoAsset):
+		return i18n.T(ctx, "The release has no download for this device")
+	case errors.Is(err, kiosk.ErrChecksum):
+		return i18n.T(ctx, "The download doesn't match its checksum; nothing was changed")
+	case errors.Is(err, kiosk.ErrUpgradeCheck):
+		return i18n.T(ctx, "The downloaded program doesn't work; nothing was changed")
 	case errors.Is(err, kiosk.ErrNotSeekable):
 		return i18n.T(ctx, "This can't jump to a position")
 	case errors.Is(err, kiosk.ErrJobFinished):
@@ -606,6 +620,38 @@ func (s *Server) systemRestart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	toast(w, "success", i18n.T(r.Context(), "Restarting… the page reconnects by itself in a few seconds."))
+}
+
+// upgradeShow is the Flimmer card: what runs and whether a newer release
+// exists. ?check=1 asks GitHub again instead of using the answer from the
+// last few minutes.
+func (s *Server) upgradeShow(w http.ResponseWriter, r *http.Request) {
+	info, err := s.k.CheckUpgrade(r.Context(), r.FormValue("check") != "")
+	msg := ""
+	if err != nil {
+		info = kiosk.UpgradeInfo{Current: kiosk.Version()}
+		msg = errText(r.Context(), err)
+		if !errors.Is(err, kiosk.ErrUpgradeOff) && !errors.Is(err, kiosk.ErrNoRelease) {
+			msg = i18n.T(r.Context(), "Couldn't check for updates: %s", msg)
+		}
+	}
+	render(w, r, views.UpgradeCard(info, msg))
+}
+
+// upgradeInstall downloads and installs the latest release; the service then
+// restarts, so the page reconnects like after "Restart service".
+func (s *Server) upgradeInstall(w http.ResponseWriter, r *http.Request) {
+	res, err := s.k.Upgrade(r.Context())
+	if err != nil {
+		fail(w, r, err)
+		return
+	}
+	if res.Restarted {
+		toast(w, "success", i18n.T(r.Context(), "Restarting… the page reconnects by itself in a few seconds."))
+	} else {
+		toast(w, "warning", i18n.T(r.Context(), "%s is installed. Restart flimmer to run it.", res.To))
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) systemYtDlp(w http.ResponseWriter, r *http.Request) {

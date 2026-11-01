@@ -66,6 +66,7 @@ func (bt *Bot) Run(ctx context.Context) {
 		{Command: "pause", Description: "Pause/Fortsetzen"},
 		{Command: "lock", Description: "Sperren/Entsperren: nichts unterbricht die Wiedergabe"},
 		{Command: "restart", Description: "Player neu starten"},
+		{Command: "upgrade", Description: "Auf die neueste Version aktualisieren"},
 		{Command: "display", Description: "mpv-Statistik auf dem Bildschirm"},
 		{Command: "qr", Description: "QR-Code zur Weboberfläche zeigen"},
 		{Command: "screenshot", Description: "Foto vom aktuellen Bildschirm"},
@@ -73,7 +74,7 @@ func (bt *Bot) Run(ctx context.Context) {
 		{Command: "debug", Description: "Debug-Modus"},
 		{Command: "help", Description: "Hilfe"},
 	}})
-	bt.send(ctx, "📺 Flimmer ist wieder online!", nil)
+	bt.send(ctx, "📺 Flimmer ist wieder online! (Version "+kiosk.Version()+")", nil)
 	go bt.watchJobs(ctx)
 	bt.b.Start(ctx)
 }
@@ -201,6 +202,8 @@ func (bt *Bot) onCommand(ctx context.Context, m *models.Message, text string) {
 		bt.screenshot(ctx, m)
 	case "passwort", "password", "pw":
 		bt.resetPassword(ctx, m)
+	case "upgrade", "update":
+		bt.upgrade(ctx, m, arg)
 	case "lock", "sperre":
 		bt.lock(ctx, m, arg)
 	case "debug", "d":
@@ -225,6 +228,60 @@ func warn(err error) string {
 		return "🔒 Gesperrt: das würde die Wiedergabe unterbrechen. Entsperren mit /lock"
 	}
 	return "⚠️ " + err.Error()
+}
+
+// upgrade says whether a newer release exists; "/upgrade jetzt" installs it
+// (two steps: it restarts the player and the whole screen goes dark).
+func (bt *Bot) upgrade(ctx context.Context, m *models.Message, arg string) {
+	info, err := bt.k.CheckUpgrade(ctx, true)
+	switch {
+	case errors.Is(err, kiosk.ErrUpgradeOff):
+		bt.reply(ctx, m, "⚠️ Aktualisierungen sind abgeschaltet.")
+		return
+	case errors.Is(err, kiosk.ErrNoRelease):
+		bt.reply(ctx, m, "ℹ️ Es wurde noch keine Version veröffentlicht. Läuft: "+kiosk.Version())
+		return
+	case err != nil:
+		bt.reply(ctx, m, "⚠️ Prüfen fehlgeschlagen: "+err.Error())
+		return
+	case !info.Newer:
+		bt.reply(ctx, m, "✅ Flimmer ist aktuell ("+info.Current+").")
+		return
+	case !info.CanInstall:
+		bt.reply(ctx, m, fmt.Sprintf("ℹ️ Version %s ist da, hat aber keinen Download für dieses Gerät.\n%s", info.Latest, info.URL))
+		return
+	}
+	if arg != "jetzt" && arg != "now" {
+		bt.reply(ctx, m, fmt.Sprintf("⬆️ Neue Version %s (läuft: %s).\n%s\n\nInstallieren: /upgrade jetzt\nDabei startet der Dienst neu: der Bildschirm wird kurz dunkel und die Wiedergabe beginnt von vorn.", info.Latest, info.Current, info.URL))
+		return
+	}
+	bt.reply(ctx, m, "⬇️ Lade "+info.Latest+" herunter und prüfe sie…")
+	res, err := bt.k.Upgrade(ctx)
+	switch {
+	case err != nil:
+		bt.reply(ctx, m, "⚠️ Nicht aktualisiert: "+upgradeErrText(err))
+	case res.Restarted:
+		bt.reply(ctx, m, "✅ "+res.To+" ist installiert, Flimmer startet neu und meldet sich gleich wieder.")
+	default:
+		bt.reply(ctx, m, "✅ "+res.To+" ist installiert. Flimmer muss von Hand neu gestartet werden.")
+	}
+}
+
+// upgradeErrText explains the errors an upgrade can end with.
+func upgradeErrText(err error) string {
+	switch {
+	case errors.Is(err, kiosk.ErrLocked):
+		return "gesperrt: das würde die Wiedergabe unterbrechen. Entsperren mit /lock"
+	case errors.Is(err, kiosk.ErrChecksum):
+		return "der Download passt nicht zur Prüfsumme; nichts wurde geändert."
+	case errors.Is(err, kiosk.ErrUpgradeCheck):
+		return "das heruntergeladene Programm funktioniert nicht; nichts wurde geändert."
+	case errors.Is(err, kiosk.ErrUpgradeBusy):
+		return "eine Aktualisierung läuft bereits."
+	case errors.Is(err, kiosk.ErrUpToDate):
+		return "schon aktuell."
+	}
+	return err.Error()
 }
 
 // lock toggles the lock (or sets it with "on"/"off").

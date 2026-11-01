@@ -40,6 +40,11 @@ type Config struct {
 	PublicURL    string   // address to show instead of https://<LAN IP>:<port>
 	VideoEncoder string   // h264_v4l2m2m on the Pi
 	LockFile     string   // exists while the kiosk is locked (checked by deploy.sh)
+
+	UpdateRepo    string // GitHub "owner/name" whose releases Upgrade installs ("" = updates off)
+	UpdateAPI     string // GitHub API address, only set by tests
+	ExecPath      string // the binary Upgrade replaces, only set by tests (default: this one)
+	UpgradeMarker string // file that watches a new version after an upgrade
 }
 
 // Fetcher downloads a Telegram file to dst. Set by the bot.
@@ -62,7 +67,8 @@ type Service struct {
 
 	thumbMu sync.Mutex
 
-	qr qrState
+	qr      qrState
+	upgrade upgradeState
 
 	wake chan struct{}
 

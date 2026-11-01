@@ -21,6 +21,8 @@ Befehle:
 /screenshot – Foto vom aktuellen Bildschirm
 /qr – QR-Code zur Weboberfläche auf dem Bildschirm
 /passwort – neues Passwort für die Weboberfläche
+/lock – Wiedergabe sperren/entsperren (nichts kann sie unterbrechen)
+/upgrade – auf neue Version prüfen (/upgrade jetzt: installieren)
 /restart – Player neu starten (/restart all: ganzer Dienst)
 /display – mpv-Statistik auf dem Bildschirm
 /menu – Tastenmenü

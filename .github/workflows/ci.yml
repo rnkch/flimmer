@@ -1,0 +1,19 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go/go.mod
+      # The tests start a real mpv (no window) and encode with ffmpeg's libx264.
+      - run: sudo apt-get update && sudo apt-get install -y mpv ffmpeg
+      - working-directory: go
+        run: go vet ./... && go test ./...

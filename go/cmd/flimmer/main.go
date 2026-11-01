@@ -39,9 +39,15 @@ func main() {
 		hdmiFlag  = flag.String("hdmi-flag", home+"/.needs-hdmi", "file whose existence selects HDMI output")
 		nmcli     = flag.String("nmcli", "sudo -n nmcli", "NetworkManager CLI for the Wi-Fi settings, space separated; empty = off")
 		fallback  = flag.String("fallback-wifi", "flimmer:flimmer", "ssid:password saved once as the lowest-priority Wi-Fi (e.g. a phone hotspot); empty = none")
+		updRepo   = flag.String("update-repo", kiosk.DefaultUpdateRepo, "GitHub owner/name whose releases the web UI and /upgrade install; empty = updates off")
+		showVer   = flag.Bool("version", false, "print the version and exit")
 		debugLog  = flag.Bool("v", false, "debug logging")
 	)
 	flag.Parse()
+	if *showVer {
+		fmt.Println(kiosk.Version())
+		return
+	}
 	if *mediaDir == "" {
 		*mediaDir = filepath.Join(*dataDir, "media")
 	}
@@ -63,13 +69,13 @@ func main() {
 	}
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, opts)))
 
-	if err := run(*mediaDir, *dataDir, *creds, *listen, *listenTLS, *publicURL, *socket, *mpvArgs, *encoder, *hdmiFlag, *nmcli, *fallback); err != nil {
+	if err := run(*mediaDir, *dataDir, *creds, *listen, *listenTLS, *publicURL, *socket, *mpvArgs, *encoder, *hdmiFlag, *nmcli, *fallback, *updRepo); err != nil {
 		slog.Error("fatal", "err", err)
 		os.Exit(1)
 	}
 }
 
-func run(mediaDir, dataDir, credsPath, listen, listenTLS, publicURL, socket, mpvArgs, encoder, hdmiFlag, nmcli, fallbackWifi string) error {
+func run(mediaDir, dataDir, credsPath, listen, listenTLS, publicURL, socket, mpvArgs, encoder, hdmiFlag, nmcli, fallbackWifi, updateRepo string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -88,20 +94,22 @@ func run(mediaDir, dataDir, credsPath, listen, listenTLS, publicURL, socket, mpv
 
 	_, hdmiErr := os.Stat(hdmiFlag)
 	cfg := kiosk.Config{
-		MediaDir:     mediaDir,
-		TmpDir:       tmpDir,
-		ThumbDir:     thumbDir,
-		HDMI:         hdmiErr == nil,
-		FFmpeg:       "ffmpeg",
-		FFprobe:      "ffprobe",
-		HeifConvert:  "heif-convert",
-		YtDlp:        "yt-dlp",
-		TLSAddr:      listenTLS,
-		PublicURL:    publicURL,
-		VideoEncoder: encoder,
-		LockFile:     filepath.Join(dataDir, "locked"),
-		Nmcli:        strings.Fields(nmcli),
-		FallbackWifi: fallbackWifi,
+		MediaDir:      mediaDir,
+		TmpDir:        tmpDir,
+		ThumbDir:      thumbDir,
+		HDMI:          hdmiErr == nil,
+		FFmpeg:        "ffmpeg",
+		FFprobe:       "ffprobe",
+		HeifConvert:   "heif-convert",
+		YtDlp:         "yt-dlp",
+		TLSAddr:       listenTLS,
+		PublicURL:     publicURL,
+		VideoEncoder:  encoder,
+		LockFile:      filepath.Join(dataDir, "locked"),
+		UpdateRepo:    updateRepo,
+		UpgradeMarker: filepath.Join(dataDir, "upgrade-pending"),
+		Nmcli:         strings.Fields(nmcli),
+		FallbackWifi:  fallbackWifi,
 	}
 	player := &mpv.Player{
 		Bin:    "mpv",
@@ -109,6 +117,9 @@ func run(mediaDir, dataDir, credsPath, listen, listenTLS, publicURL, socket, mpv
 		Args:   append([]string{"--loop-playlist=inf", "--image-display-duration=5"}, strings.Fields(mpvArgs)...),
 	}
 	k := kiosk.New(cfg, st, player)
+	if k.CheckPendingUpgrade() {
+		return errors.New("the new version didn't stay up; went back to the previous one")
+	}
 	k.SyncLockFile(ctx)
 	slog.Info("flimmer starting", "media", mediaDir, "hdmi", cfg.HDMI)
 

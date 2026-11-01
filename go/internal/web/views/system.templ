@@ -2,6 +2,7 @@ package views
 
 import (
 	"fmt"
+	"github.com/rnkch/flimmer/internal/kiosk"
 	"github.com/rnkch/flimmer/internal/store/db"
 	"github.com/rnkch/flimmer/internal/sysinfo"
 )
@@ -20,6 +21,7 @@ templ SystemPage(p Page, si sysinfo.Info, mediaBytes int64, events []db.Event, a
 		}
 		@SystemStats(si, mediaBytes)
 		@AccessCard(accessURL, fingerprint)
+		@UpgradeCardLoading()
 		@YtDlpCardLoading()
 		<wa-card class="panel">
 			<div slot="header" class="wa-heading-s">{ t(ctx, "Log") }</div>
@@ -111,6 +113,55 @@ templ EventLog(events []db.Event) {
 			</div>
 		}
 	</div>
+}
+
+// UpgradeCardLoading is replaced by UpgradeCard: asking GitHub takes a moment.
+templ UpgradeCardLoading() {
+	<wa-card id="upgrade" hx-get="/system/upgrade" hx-trigger="load" hx-swap="outerHTML">
+		<div class="wa-stack wa-gap-3xs">
+			<span class="wa-caption-xs">Flimmer</span>
+			<wa-spinner></wa-spinner>
+		</div>
+	</wa-card>
+}
+
+// UpgradeCard shows the running version and, when GitHub has a newer release,
+// the button to install it (the install blocks until it is downloaded and
+// checked, the spinner shows that). msg is why the check failed, if it did.
+templ UpgradeCard(info kiosk.UpgradeInfo, msg string) {
+	<wa-card id="upgrade">
+		<div class="wa-split wa-align-items-center">
+			<div class="wa-stack wa-gap-3xs">
+				<span class="wa-caption-xs">Flimmer</span>
+				<span class="num">{ info.Current }</span>
+				switch {
+					case msg != "":
+						<span class="wa-caption-xs">{ msg }</span>
+					case info.Newer:
+						<span class="wa-caption-xs">
+							<a href={ templ.URL(info.URL) } target="_blank" rel="noopener">{ t(ctx, "%s is available", info.Latest) }</a>
+						</span>
+					default:
+						<span class="wa-caption-xs"><wa-icon name="circle-check"></wa-icon> { t(ctx, "Up to date") }</span>
+				}
+				if msg == "" && !info.Release {
+					<span class="wa-caption-xs">{ t(ctx, "Development build, not a release") }</span>
+				}
+			</div>
+			<div class="wa-cluster wa-gap-xs">
+				<wa-spinner id="upgrade-busy" class="htmx-indicator"></wa-spinner>
+				<wa-button size="s" appearance="plain" hx-get="/system/upgrade?check=1" hx-target="#upgrade" hx-swap="outerHTML" hx-indicator="#upgrade-busy">
+					<wa-icon slot="start" name="rotate"></wa-icon> { t(ctx, "Check again") }
+				</wa-button>
+				if msg == "" && info.Newer && info.CanInstall {
+					<wa-button class="disturbs" size="s" variant="brand" hx-post="/system/upgrade" hx-swap="none" hx-indicator="#upgrade-busy"
+						hx-confirm={ t(ctx, "Install %s now? Flimmer restarts: the screen goes dark for a few seconds and playback starts over; a running conversion or download starts over too.", info.Latest) }>
+						<wa-icon slot="start" name="download"></wa-icon> { t(ctx, "Install %s", info.Latest) }
+					</wa-button>
+				}
+			</div>
+		</div>
+	</wa-card>
 }
 
 // YtDlpCardLoading is replaced by YtDlpCard once loaded: asking the standalone

@@ -111,11 +111,11 @@ cd go
 go test ./...     # needs mpv and ffmpeg
 ```
 
-Code is formatted with [golines](https://github.com/segmentio/golines) (100
+Code is formatted with [golines](https://github.com/golangci/golines) (100
 columns, on top of gofmt); CI checks it, and generated files are skipped:
 
 ```bash
-go install github.com/segmentio/golines@v0.15.0
+go install github.com/golangci/golines@v0.15.0
 cd go && golines -w --ignore-generated -m 100 .
 git config core.hooksPath .githooks   # once: the pre-commit hook checks the staged files
 ```

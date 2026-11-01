@@ -3,7 +3,7 @@
 # It only checks. To fix:  cd go && golines -w --ignore-generated -m 100 .
 # Switch it on once per clone:  git config core.hooksPath .githooks
 # Without golines installed it skips itself; CI runs the same check.
-#   go install github.com/segmentio/golines@v0.15.0
+#   go install github.com/golangci/golines@v0.15.0
 top=$(git rev-parse --show-toplevel)
 # Staged Go files below go/, as paths relative to go/ (asked before the cd:
 # git's path patterns are relative to the current directory).
@@ -13,7 +13,7 @@ cd "$top/go" || exit 0
 
 if ! command -v golines >/dev/null; then
     echo "pre-commit: golines isn't installed, formatting not checked (CI will)."
-    echo "            go install github.com/segmentio/golines@v0.15.0"
+    echo "            go install github.com/golangci/golines@v0.15.0"
     exit 0
 fi
 

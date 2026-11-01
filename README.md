@@ -17,7 +17,8 @@ still the best-tested setup ([deploy/raspberry-pi](deploy/raspberry-pi)).
 ## Features
 
 - Playlist of images (with display time), videos and streams; edited live
-  without restarting playback
+  without restarting playback. An entry can be disabled instead of deleted: it
+  keeps its place, title and file but is skipped until it is enabled again
 - Web UI (German, English): upload files of any size, add links (yt-dlp),
   drag to reorder, player controls, system status, Wi-Fi settings
   (NetworkManager), playback lock
@@ -116,7 +117,7 @@ columns, on top of gofmt); CI checks it, and generated files are skipped:
 
 ```bash
 go install github.com/golangci/golines@v0.15.0
-cd go && golines -w --ignore-generated -m 100 .
+cd go && golines -w --ignore-generated -m 100 $(git ls-files '*.go')
 git config core.hooksPath .githooks   # once: the pre-commit hook checks the staged files
 ```
 

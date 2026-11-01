@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS media (
     source           TEXT    NOT NULL DEFAULT 'import',
     url              TEXT    NOT NULL DEFAULT '',
     format           TEXT    NOT NULL DEFAULT '',
+    enabled          INTEGER NOT NULL DEFAULT 1, -- 0 = stays in the playlist but is not played
     created_at       TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 

@@ -156,10 +156,24 @@ func jobName(j db.Job) string {
 	return j.URL
 }
 
-// loopSeconds is how long one pass through the playlist takes.
+// disabledCount is how many entries are switched off.
+func disabledCount(list []db.Media) (n int) {
+	for _, m := range list {
+		if !kiosk.Enabled(m) {
+			n++
+		}
+	}
+	return n
+}
+
+// loopSeconds is how long one pass through the playlist takes (disabled
+// entries aren't played).
 func loopSeconds(list []db.Media) float64 {
 	var s float64
 	for _, m := range list {
+		if !kiosk.Enabled(m) {
+			continue
+		}
 		switch m.Kind {
 		case "video", "stream": // live streams (no duration) add nothing
 			s += m.DurationS

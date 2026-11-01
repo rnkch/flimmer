@@ -14,6 +14,7 @@ import (
 	"github.com/go-telegram/bot/models"
 
 	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/store/db"
 	"github.com/rnkch/flimmerkiste/internal/sysinfo"
 )
 
@@ -36,6 +37,9 @@ func (bt *Bot) showSlides(ctx context.Context, chatID int64, msgID int, page int
 	for _, m := range list[(page-1)*pageSize : min(page*pageSize, len(list))] {
 		id := strconv.FormatInt(m.ID, 10)
 		icon := map[string]string{"image": "🖼", "video": "🎞", "stream": "📡"}[m.Kind]
+		if !kiosk.Enabled(m) {
+			icon = "⏸" // stays in the list, is not played
+		}
 		rows = append(rows, []models.InlineKeyboardButton{
 			{
 				Text:         fmt.Sprintf("%d. %s %s", m.Position, icon, short(m.Title, 14)),
@@ -62,7 +66,22 @@ func (bt *Bot) showSlides(ctx context.Context, chatID int64, msgID int, page int
 		rows = append(rows, nav)
 	}
 	text := fmt.Sprintf("PLAYLIST (%d Einträge, Seite %d/%d)", len(list), page, pages)
+	if off := len(list) - countEnabled(list); off > 0 {
+		text = fmt.Sprintf(
+			"PLAYLIST (%d Einträge, davon %d ausgeschaltet ⏸, Seite %d/%d)",
+			len(list), off, page, pages,
+		)
+	}
 	bt.show(ctx, chatID, msgID, text, &models.InlineKeyboardMarkup{InlineKeyboard: rows})
+}
+
+func countEnabled(list []db.Media) (n int) {
+	for _, m := range list {
+		if kiosk.Enabled(m) {
+			n++
+		}
+	}
+	return n
 }
 
 func (bt *Bot) show(
@@ -154,6 +173,21 @@ func (bt *Bot) onCallback(ctx context.Context, q *models.CallbackQuery) {
 			"position": fmt.Sprintf("Aktuelle Position: %d\nNeue Position (1-99, 99 = Ende):", m.Position),
 		}[parts[1]]
 		bt.sendMarkup(ctx, chatID, prompt, &models.ForceReply{ForceReply: true, Selective: true})
+	case "toggle":
+		m, err := bt.k.Get(ctx, id)
+		if err == nil {
+			err = bt.k.SetEnabled(ctx, id, !kiosk.Enabled(m))
+		}
+		if err != nil {
+			answer(warn(err), true)
+			return
+		}
+		if kiosk.Enabled(m) { // it was on: now off
+			answer("Ausgeschaltet: wird übersprungen", false)
+		} else {
+			answer("Eingeschaltet", false)
+		}
+		bt.showActions(ctx, chatID, msgID, id)
 	case "delete":
 		if err := bt.k.Delete(ctx, id); err != nil {
 			answer(warn(err), true)
@@ -178,13 +212,24 @@ func (bt *Bot) showActions(ctx context.Context, chatID int64, msgID int, id int6
 	sid := strconv.FormatInt(id, 10)
 	rows := [][]models.InlineKeyboardButton{
 		{{Text: "Rename", CallbackData: "act:rename:" + sid}},
+		{{Text: "Disable", CallbackData: "act:toggle:" + sid}},
 		{
 			{Text: "Delete", CallbackData: "act:delete:" + sid},
 			{Text: "Position", CallbackData: "act:position:" + sid},
 		},
 		{{Text: "Back to slides", CallbackData: "act:back:" + sid}},
 	}
+	if !kiosk.Enabled(m) {
+		rows[1][0].Text = "Enable"
+	}
 	info := fmt.Sprintf("✏️ \"%s\"\nPosition %d · ", m.Title, m.Position)
+	if !kiosk.Enabled(m) {
+		info = fmt.Sprintf(
+			"⏸ \"%s\" (ausgeschaltet, wird übersprungen)\nPosition %d · ",
+			m.Title,
+			m.Position,
+		)
+	}
 	switch m.Kind {
 	case "image":
 		rows[0] = append(

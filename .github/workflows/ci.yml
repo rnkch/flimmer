@@ -25,9 +25,11 @@ jobs:
         working-directory: go
         run: |
           go install github.com/golangci/golines@v0.15.0
-          files=$("$(go env GOPATH)/bin/golines" -l --ignore-generated -m 100 .)
+          # The files are named one by one: given a folder, golines skips every
+          # directory called "vendor", which would leave out cmd/vendor.
+          files=$(git ls-files -z '*.go' | xargs -0 "$(go env GOPATH)/bin/golines" -l --ignore-generated -m 100)
           if [ -n "$files" ]; then
-            echo "Not formatted; run: cd go && golines -w --ignore-generated -m 100 ."
+            echo "Not formatted; run: cd go && golines -w --ignore-generated -m 100 \$(git ls-files '*.go')"
             echo "$files"
             exit 1
           fi

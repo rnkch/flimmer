@@ -110,7 +110,45 @@ var (
 	ErrNotFound    = errors.New("not found")
 	ErrEmptyTitle  = errors.New("the title must not be empty")
 	ErrBadDuration = errors.New("the display time must be a positive number")
+	ErrDisabled    = errors.New("the entry is disabled")
 )
+
+// Enabled reports whether the entry is played (disabled ones stay in the
+// playlist but are not sent to mpv).
+func Enabled(m db.Media) bool { return m.Enabled != 0 }
+
+// SetEnabled turns an entry on or off. A disabled entry keeps its place, title
+// and file; it only isn't played. Turning off the entry on the screen
+// interrupts playback, so that is refused while the kiosk is locked.
+func (s *Service) SetEnabled(ctx context.Context, id int64, on bool) error {
+	m, err := s.st.GetMedia(ctx, id)
+	if err != nil {
+		return err
+	}
+	if Enabled(m) == on {
+		return nil
+	}
+	if !on {
+		if err := s.unlockedFor(ctx, m); err != nil {
+			return err
+		}
+	}
+	s.plMu.Lock()
+	defer s.plMu.Unlock()
+	v := int64(0)
+	if on {
+		v = 1
+	}
+	if err := s.st.SetMediaEnabled(ctx, db.SetMediaEnabledParams{Enabled: v, ID: id}); err != nil {
+		return err
+	}
+	if on {
+		s.Logf(ctx, slog.LevelInfo, "enabled", "title", m.Title)
+	} else {
+		s.Logf(ctx, slog.LevelInfo, "disabled", "title", m.Title)
+	}
+	return s.changed(ctx)
+}
 
 // Delete removes media id from the playlist and its file from disk.
 func (s *Service) Delete(ctx context.Context, id int64) error {
@@ -206,6 +244,7 @@ func (s *Service) sync(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	list = slices.DeleteFunc(list, func(m db.Media) bool { return !Enabled(m) })
 	pl, err := s.player.Playlist(ctx)
 	if errors.Is(err, mpv.ErrNotConnected) {
 		return nil // OnConnect syncs once mpv is up
@@ -332,13 +371,30 @@ func (s *Service) ToggleStats(ctx context.Context) error {
 	return err
 }
 
-// PlayIndex jumps to the 1-based playlist position.
+// PlayIndex jumps to the entry at the 1-based playlist position. mpv's list
+// only holds the enabled entries, so its index is the number of enabled
+// entries before this one.
 func (s *Service) PlayIndex(ctx context.Context, pos int) error {
 	if err := s.unlocked(ctx); err != nil {
 		return err
 	}
-	_, err := s.player.Command(ctx, "set_property", "playlist-pos", pos-1)
-	return err
+	list, err := s.st.ListMedia(ctx)
+	if err != nil {
+		return err
+	}
+	idx := 0
+	for _, m := range list {
+		switch {
+		case int(m.Position) == pos && !Enabled(m):
+			return ErrDisabled
+		case int(m.Position) == pos:
+			_, err := s.player.Command(ctx, "set_property", "playlist-pos", idx)
+			return err
+		case int(m.Position) < pos && Enabled(m):
+			idx++
+		}
+	}
+	return ErrNotFound
 }
 
 // Stream replaces the playlist with a stream URL until ResumePlaylist.

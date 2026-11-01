@@ -36,11 +36,55 @@ var pkgs = []pkg{
 
 // icons used in the templates (Font Awesome Free, solid).
 var icons = []string{
-	"angles-down", "angles-up", "arrow-down", "arrow-up", "backward-step", "chart-simple", "check", "circle-check",
-	"circle-exclamation", "circle-info", "clock", "display", "download", "ellipsis", "file-arrow-up", "film",
-	"forward-step", "gear", "grip-vertical", "hard-drive", "hourglass-half", "image", "key", "language", "link",
-	"list", "lock", "lock-open", "memory", "pause", "pen", "play", "plus", "power-off", "qrcode", "right-from-bracket", "rotate", "server", "sliders",
-	"temperature-half", "tower-broadcast", "trash", "triangle-exclamation", "tv", "upload", "wifi", "xmark",
+	"angles-down",
+	"angles-up",
+	"arrow-down",
+	"arrow-up",
+	"backward-step",
+	"chart-simple",
+	"check",
+	"circle-check",
+	"circle-exclamation",
+	"circle-info",
+	"clock",
+	"display",
+	"download",
+	"ellipsis",
+	"eye",
+	"eye-slash",
+	"file-arrow-up",
+	"film",
+	"forward-step",
+	"gear",
+	"grip-vertical",
+	"hard-drive",
+	"hourglass-half",
+	"image",
+	"key",
+	"language",
+	"link",
+	"list",
+	"lock",
+	"lock-open",
+	"memory",
+	"pause",
+	"pen",
+	"play",
+	"plus",
+	"power-off",
+	"qrcode",
+	"right-from-bracket",
+	"rotate",
+	"server",
+	"sliders",
+	"temperature-half",
+	"tower-broadcast",
+	"trash",
+	"triangle-exclamation",
+	"tv",
+	"upload",
+	"wifi",
+	"xmark",
 }
 
 func main() {
@@ -59,7 +103,10 @@ func main() {
 			log.Fatalf("%s: %v", p.name, err)
 		}
 	}
-	if err := os.CopyFS(filepath.Join(tmp, "assets"), os.DirFS(filepath.Join(webDir, "assets"))); err != nil {
+	if err := os.CopyFS(
+		filepath.Join(tmp, "assets"),
+		os.DirFS(filepath.Join(webDir, "assets")),
+	); err != nil {
 		log.Fatal(err)
 	}
 

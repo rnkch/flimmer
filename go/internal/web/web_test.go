@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -163,5 +164,62 @@ func TestBootID(t *testing.T) {
 	}
 	if get(b, "/login") == id {
 		t.Fatal("two starts share a boot id")
+	}
+}
+
+// Switching an entry off over HTTP: the row comes back dimmed with "Enable" in
+// its menu (and no "Show now"), the summary counts it, and it can be switched on again.
+func TestDisableEntryOverHTTP(t *testing.T) {
+	s, k := newServer(t)
+	ctx := context.Background()
+	m, err := k.AddStream(
+		ctx, kiosk.URLInfo{URL: "rtsp://example.invalid/cam", Title: "Cam", Live: true},
+		kiosk.URLFormat{}, "", 0,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	token, err := k.Login(ctx, "test-password-123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	do := func(method, path string, form url.Values) string {
+		t.Helper()
+		req := httptest.NewRequest(method, path, strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
+		req.AddCookie(&http.Cookie{Name: "lang", Value: "en"})
+		rec := httptest.NewRecorder()
+		s.Handler().ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("%s %s: %d %s", method, path, rec.Code, rec.Body.String())
+		}
+		return rec.Body.String()
+	}
+	row := fmt.Sprintf("/media/%d/enabled", m.ID)
+
+	off := do("POST", row, url.Values{"on": {"false"}})
+	for _, want := range []string{`class="off"`, "Disabled: skipped in playback", "Enable</wa-dropdown-item>", `"on": "true"`} {
+		if !strings.Contains(off, want) {
+			t.Errorf("disabled row lacks %q:\n%s", want, off)
+		}
+	}
+	if strings.Contains(off, "Show now") || strings.Contains(off, "Disable</wa-dropdown-item>") {
+		t.Errorf("a disabled row offers Show now or Disable:\n%s", off)
+	}
+	if got, _ := k.Get(ctx, m.ID); kiosk.Enabled(got) {
+		t.Fatal("still enabled in the database")
+	}
+	if sum := do("GET", "/playlist/summary", nil); !strings.Contains(sum, "1 disabled") {
+		t.Errorf("summary doesn't count the disabled entry: %s", sum)
+	}
+
+	on := do("POST", row, url.Values{"on": {"true"}})
+	if strings.Contains(on, "off-note") || !strings.Contains(on, "Show now") ||
+		!strings.Contains(on, "Disable</wa-dropdown-item>") {
+		t.Errorf("enabled row:\n%s", on)
+	}
+	if sum := do("GET", "/playlist/summary", nil); strings.Contains(sum, "disabled") {
+		t.Errorf("summary still mentions disabled entries: %s", sum)
 	}
 }

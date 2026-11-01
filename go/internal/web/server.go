@@ -93,6 +93,7 @@ func (s *Server) Handler() http.Handler {
 	app.HandleFunc("POST /media/{id}/rename", s.mediaRename)
 	app.HandleFunc("POST /media/{id}/duration", s.mediaDuration)
 	app.HandleFunc("POST /media/{id}/play", s.mediaPlay)
+	app.HandleFunc("POST /media/{id}/enabled", s.mediaEnabled)
 	app.HandleFunc("DELETE /media/{id}", s.mediaDelete)
 	app.HandleFunc("GET /media/{id}/thumb", s.mediaThumb)
 	app.HandleFunc("GET /media/{id}/large", s.mediaLarge)

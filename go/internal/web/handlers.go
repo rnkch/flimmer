@@ -158,6 +158,8 @@ func errText(ctx context.Context, err error) string {
 		return i18n.T(ctx, "The name can have at most %d characters", kiosk.DisplayNameMax)
 	case errors.Is(err, kiosk.ErrLocked):
 		return i18n.T(ctx, "Locked: this would interrupt playback. Unlock it at the top.")
+	case errors.Is(err, kiosk.ErrDisabled):
+		return i18n.T(ctx, "This entry is disabled; enable it first")
 	case errors.Is(err, kiosk.ErrUpgradeOff):
 		return i18n.T(ctx, "Updates are switched off")
 	case errors.Is(err, kiosk.ErrNoRelease):
@@ -344,6 +346,15 @@ func (s *Server) mediaPlay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// mediaEnabled switches an entry on or off ("on" = true/false) and returns its row.
+func (s *Server) mediaEnabled(w http.ResponseWriter, r *http.Request) {
+	if err := s.k.SetEnabled(r.Context(), pathID(r), r.FormValue("on") == "true"); err != nil {
+		fail(w, r, err)
+		return
+	}
+	s.mediaRow(w, r, pathID(r), "")
 }
 
 func (s *Server) mediaDelete(w http.ResponseWriter, r *http.Request) {

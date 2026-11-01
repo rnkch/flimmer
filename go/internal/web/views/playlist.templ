@@ -1,6 +1,9 @@
 package views
 
-import "github.com/rnkch/flimmerkiste/internal/store/db"
+import (
+	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/store/db"
+)
 
 templ PlaylistPage(p Page, list []db.Media, currentID int64, activeJobs int) {
 	@Layout(p) {
@@ -23,7 +26,11 @@ templ PlaylistPage(p Page, list []db.Media, currentID int64, activeJobs int) {
 
 templ PlaylistSummary(list []db.Media, activeJobs int) {
 	<span id="playlist-summary" class="wa-caption-s num" hx-get="/playlist/summary" hx-trigger="playlist from:body, job from:body" hx-swap="outerHTML">
-		{ t(ctx, "%d entries", len(list)) } · { t(ctx, "Loop %s", Dur(loopSeconds(list))) }
+		{ t(ctx, "%d entries", len(list)) }
+		if n := disabledCount(list); n > 0 {
+			({ t(ctx, "%d disabled", n) })
+		}
+		· { t(ctx, "Loop %s", Dur(loopSeconds(list))) }
 		if activeJobs > 0 {
 			· <wa-spinner></wa-spinner> { t(ctx, "%d processing", activeJobs) }
 		}
@@ -53,7 +60,7 @@ templ PlaylistList(list []db.Media, currentID int64) {
 // "duration": that value is shown as an inline form instead of text.
 templ MediaRow(m db.Media, current bool, edit string) {
 	<li id={ "media-" + id(m) } data-id={ id(m) } data-position={ itoa(m.Position) }
-		class={ templ.KV("current", current), templ.KV("editing", edit != "") }
+		class={ templ.KV("current", current), templ.KV("editing", edit != ""), templ.KV("off", !kiosk.Enabled(m)) }
 		if edit == "" {
 			draggable="true"
 		} else {
@@ -90,6 +97,9 @@ templ MediaRow(m db.Media, current bool, edit string) {
 			} else {
 				<span class="editable" hx-get={ mediaURL(m, "/edit/title") } hx-target={ "#media-" + id(m) } hx-swap="outerHTML" title={ t(ctx, "Click to rename") }>{ m.Title }</span>
 			}
+			if !kiosk.Enabled(m) {
+				<span class="off-note wa-caption-xs"><wa-icon name="eye-slash"></wa-icon> { t(ctx, "Disabled: skipped in playback") }</span>
+			}
 			if current {
 				<div id="row-progress"></div>
 			}
@@ -120,7 +130,14 @@ templ MediaRow(m db.Media, current bool, edit string) {
 		</span>
 		<wa-dropdown class="menu" placement="bottom-end">
 			<wa-button slot="trigger" size="s" appearance="plain"><wa-icon name="ellipsis" label={ t(ctx, "Actions") }></wa-icon></wa-button>
-			<wa-dropdown-item class="disturbs" hx-post={ mediaURL(m, "/play") } hx-swap="none"><wa-icon slot="icon" name="play"></wa-icon> { t(ctx, "Show now") }</wa-dropdown-item>
+			if kiosk.Enabled(m) {
+				<wa-dropdown-item class="disturbs" hx-post={ mediaURL(m, "/play") } hx-swap="none"><wa-icon slot="icon" name="play"></wa-icon> { t(ctx, "Show now") }</wa-dropdown-item>
+			}
+			if kiosk.Enabled(m) {
+				<wa-dropdown-item class="disturbs-current" hx-post={ mediaURL(m, "/enabled") } hx-vals='{"on": "false"}' hx-target={ "#media-" + id(m) } hx-swap="outerHTML"><wa-icon slot="icon" name="eye-slash"></wa-icon> { t(ctx, "Disable") }</wa-dropdown-item>
+			} else {
+				<wa-dropdown-item hx-post={ mediaURL(m, "/enabled") } hx-vals='{"on": "true"}' hx-target={ "#media-" + id(m) } hx-swap="outerHTML"><wa-icon slot="icon" name="eye"></wa-icon> { t(ctx, "Enable") }</wa-dropdown-item>
+			}
 			<wa-dropdown-item hx-post={ mediaURL(m, "/move") } hx-vals='{"position": 1}' hx-target="#playlist" hx-swap="outerMorph"><wa-icon slot="icon" name="angles-up"></wa-icon> { t(ctx, "Move to top") }</wa-dropdown-item>
 			<wa-dropdown-item hx-post={ mediaURL(m, "/move") } hx-vals='{"position": 1000000}' hx-target="#playlist" hx-swap="outerMorph"><wa-icon slot="icon" name="angles-down"></wa-icon> { t(ctx, "Move to bottom") }</wa-dropdown-item>
 			<wa-dropdown-item hx-get={ mediaURL(m, "/edit/title") } hx-target={ "#media-" + id(m) } hx-swap="outerHTML"><wa-icon slot="icon" name="pen"></wa-icon> { t(ctx, "Rename") }</wa-dropdown-item>

@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	_ "modernc.org/sqlite"
+
+	"github.com/rnkch/flimmerkiste/internal/store/db"
 )
 
 // TestMigrateFromFirstRelease opens a database with the first release's jobs
@@ -67,6 +69,16 @@ INSERT INTO jobs (source, orig_name, state, media_id) VALUES ('telegram', 'alt.m
 	}
 	if m, err := st.GetMedia(ctx, 1); err != nil || m.Filename != "a.jpg" {
 		t.Fatalf("old media after migration: %+v %v", m, err)
+	}
+	// Entries from before "disabled" existed are played, and can be switched off.
+	if m, _ := st.GetMedia(ctx, 1); m.Enabled != 1 {
+		t.Fatalf("an old entry is not enabled after the migration: %+v", m)
+	}
+	if err := st.SetMediaEnabled(ctx, db.SetMediaEnabledParams{Enabled: 0, ID: 1}); err != nil {
+		t.Fatal(err)
+	}
+	if m, _ := st.GetMedia(ctx, 1); m.Enabled != 0 {
+		t.Fatalf("entry still enabled: %+v", m)
 	}
 
 	// Opening again is a no-op.

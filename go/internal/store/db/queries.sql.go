@@ -113,7 +113,7 @@ func (q *Queries) GetJob(ctx context.Context, id int64) (Job, error) {
 }
 
 const getMedia = `-- name: GetMedia :one
-SELECT id, filename, title, kind, position, image_duration_s, width, height, duration_s, size_bytes, source, url, format, created_at FROM media WHERE id = ?
+SELECT id, filename, title, kind, position, image_duration_s, width, height, duration_s, size_bytes, source, url, format, enabled, created_at FROM media WHERE id = ?
 `
 
 func (q *Queries) GetMedia(ctx context.Context, id int64) (Media, error) {
@@ -133,6 +133,7 @@ func (q *Queries) GetMedia(ctx context.Context, id int64) (Media, error) {
 		&i.Source,
 		&i.URL,
 		&i.Format,
+		&i.Enabled,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -229,7 +230,7 @@ func (q *Queries) InsertJob(ctx context.Context, arg InsertJobParams) (Job, erro
 const insertMedia = `-- name: InsertMedia :one
 INSERT INTO media (filename, title, kind, position, image_duration_s, width, height, duration_s, size_bytes, source, url, format)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, filename, title, kind, position, image_duration_s, width, height, duration_s, size_bytes, source, url, format, created_at
+RETURNING id, filename, title, kind, position, image_duration_s, width, height, duration_s, size_bytes, source, url, format, enabled, created_at
 `
 
 type InsertMediaParams struct {
@@ -277,6 +278,7 @@ func (q *Queries) InsertMedia(ctx context.Context, arg InsertMediaParams) (Media
 		&i.Source,
 		&i.URL,
 		&i.Format,
+		&i.Enabled,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -378,7 +380,7 @@ func (q *Queries) ListEvents(ctx context.Context, limit int64) ([]Event, error) 
 }
 
 const listMedia = `-- name: ListMedia :many
-SELECT id, filename, title, kind, position, image_duration_s, width, height, duration_s, size_bytes, source, url, format, created_at FROM media ORDER BY position, id
+SELECT id, filename, title, kind, position, image_duration_s, width, height, duration_s, size_bytes, source, url, format, enabled, created_at FROM media ORDER BY position, id
 `
 
 func (q *Queries) ListMedia(ctx context.Context) ([]Media, error) {
@@ -404,6 +406,7 @@ func (q *Queries) ListMedia(ctx context.Context) ([]Media, error) {
 			&i.Source,
 			&i.URL,
 			&i.Format,
+			&i.Enabled,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -618,6 +621,20 @@ type SetJobSrcPathParams struct {
 
 func (q *Queries) SetJobSrcPath(ctx context.Context, arg SetJobSrcPathParams) error {
 	_, err := q.db.ExecContext(ctx, setJobSrcPath, arg.SrcPath, arg.OrigName, arg.ID)
+	return err
+}
+
+const setMediaEnabled = `-- name: SetMediaEnabled :exec
+UPDATE media SET enabled = ? WHERE id = ?
+`
+
+type SetMediaEnabledParams struct {
+	Enabled int64 `json:"enabled"`
+	ID      int64 `json:"id"`
+}
+
+func (q *Queries) SetMediaEnabled(ctx context.Context, arg SetMediaEnabledParams) error {
+	_, err := q.db.ExecContext(ctx, setMediaEnabled, arg.Enabled, arg.ID)
 	return err
 }
 

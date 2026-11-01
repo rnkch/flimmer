@@ -24,6 +24,9 @@ UPDATE media SET title = ? WHERE id = ?;
 -- name: SetMediaImageDuration :exec
 UPDATE media SET image_duration_s = ? WHERE id = ?;
 
+-- name: SetMediaEnabled :exec
+UPDATE media SET enabled = ? WHERE id = ?;
+
 -- name: DeleteMedia :exec
 DELETE FROM media WHERE id = ?;
 

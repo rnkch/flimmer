@@ -14,7 +14,7 @@ Links:
 Dateien über 20 MB und Streams in der Playlist: über die Weboberfläche (/qr).
 
 Befehle:
-/slides – Playlist: verschieben, umbenennen, Dauer, löschen
+/slides – Playlist: verschieben, umbenennen, Dauer, aus-/einschalten, löschen
 /next, /prev – nächstes/vorheriges Bild oder Video
 /pause – Pause/Fortsetzen
 /status – Wiedergabe, Speicher, Temperatur, Adresse, Version

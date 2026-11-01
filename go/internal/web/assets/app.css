@@ -387,6 +387,21 @@ wa-card.panel::part(body) {
   background: var(--wa-color-neutral-fill-quiet);
 }
 
+/* Disabled entries stay in the list but aren't played: dimmed, with a note. */
+.playlist > li.off .thumb,
+.playlist > li.off .title .editable,
+.playlist > li.off .dur {
+  opacity: 0.5;
+}
+
+.playlist > li.off .thumb img {
+  filter: grayscale(1);
+}
+
+.playlist .off-note {
+  color: var(--wa-color-text-quiet);
+}
+
 .playlist .title {
   display: grid;
   gap: var(--wa-space-3xs);

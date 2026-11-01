@@ -1,6 +1,6 @@
 #!/bin/bash
 # Pre-commit: are the staged Go files formatted (golines, 100 columns)?
-# It only checks. To fix:  cd go && golines -w --ignore-generated -m 100 .
+# It only checks. To fix:  cd go && golines -w --ignore-generated -m 100 $(git ls-files '*.go')
 # Switch it on once per clone:  git config core.hooksPath .githooks
 # Without golines installed it skips itself; CI runs the same check.
 #   go install github.com/golangci/golines@v0.15.0
@@ -22,6 +22,6 @@ bad=$(golines -l --ignore-generated -m 100 $files)
 if [ -n "$bad" ]; then
     echo "pre-commit: not formatted (golines, 100 columns):"
     echo "$bad" | sed 's/^/  /'
-    echo "Fix:  cd go && golines -w --ignore-generated -m 100 ."
+    echo "Fix:  cd go && golines -w --ignore-generated -m 100 \$(git ls-files '*.go')"
     exit 1
 fi

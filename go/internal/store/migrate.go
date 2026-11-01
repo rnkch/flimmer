@@ -8,7 +8,7 @@ import (
 
 // schemaVersion is the version of schema.sql. Databases created by an older
 // version are brought up to date by the migrations below.
-const schemaVersion = 5
+const schemaVersion = 6
 
 // migrations[v] upgrades a database from version v to v+1. Version 1 is the
 // first release (jobs without URL support).
@@ -106,6 +106,12 @@ SELECT id, source, src_path, orig_name, title, want_position, image_duration_s,
 FROM jobs;
 DROP TABLE jobs;
 ALTER TABLE jobs_new RENAME TO jobs;
+`,
+	// 5: disabled playlist entries. A plain ADD COLUMN: the sqlc queries name their
+	// columns, so the column order of a migrated database doesn't matter, and the
+	// previous binary still runs on the migrated database (it ignores the column).
+	5: `
+ALTER TABLE media ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1;
 `,
 }
 

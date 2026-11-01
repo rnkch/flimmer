@@ -53,6 +53,7 @@ type Media struct {
 	Source         string  `json:"source"`
 	URL            string  `json:"url"`
 	Format         string  `json:"format"`
+	Enabled        int64   `json:"enabled"`
 	CreatedAt      string  `json:"created_at"`
 }
 

@@ -1,0 +1,654 @@
+@import '@awesome.me/webawesome/styles/webawesome.css';
+@import './tokyonight.css';
+@import './theme.css';
+
+/*
+ * House recipes. Only layout and composition here; colors, spacing and type
+ * come from Web Awesome tokens so the theme (theme.css) changes everything.
+ */
+
+body {
+  margin: 0;
+  background-color: var(--wa-color-surface-lowered);
+}
+
+/* Film grain (theme.css: --kiosk-grain): blended into each surface's own
+   background, so text, icons and content drawn on top stay clean. Status
+   colors (tags, switches, progress bars) stay plain. Inside Web Awesome
+   components the background is painted by a part, not by the element.
+   Buttons stay smooth: they read as controls against the grainy surfaces
+   they sit on (and transparent ones would show the grain as a gray patch). */
+body,
+.topbar,
+wa-card,
+wa-input::part(base),
+wa-number-input::part(base),
+wa-textarea::part(base),
+wa-dropdown::part(menu),
+wa-dialog::part(dialog) {
+  background-image: var(--kiosk-grain);
+  background-blend-mode: soft-light;
+}
+
+.shell {
+  max-width: var(--kiosk-content-width);
+  margin: 0 auto;
+  padding: var(--wa-space-m);
+}
+
+/* --- top bar --- */
+
+/* Full-width bar; its content lines up with the page column below. */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--wa-color-surface-default); /* not the shorthand: it would drop the grain */
+  border-bottom: var(--wa-border-width-s) solid var(--wa-color-surface-border);
+}
+
+/* Two rows on every width. Row 1: name, lock (it belongs to the kiosk, like
+   the name), now playing (shrinks, with an ellipsis), language, logout. Row 2: the nav. A grid, not a wrapping flex
+   row: that would push buttons onto a row of their own instead of shrinking
+   the title. The name takes at most 40 % of row 1. */
+.topbar-inner {
+  display: grid;
+  grid-template-columns: fit-content(40%) auto minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    'brand lock now lang logout'
+    'nav   nav  nav nav  nav';
+  align-items: center;
+  column-gap: var(--wa-space-s);
+  row-gap: var(--wa-space-3xs);
+  max-width: var(--kiosk-content-width);
+  margin: 0 auto;
+  padding: var(--wa-space-2xs) var(--wa-space-m);
+}
+
+.topbar .brand {
+  grid-area: brand;
+}
+
+.topbar .now-playing {
+  grid-area: now;
+  justify-content: flex-end;
+  /* Fill exactly its cell (an auto margin would size it to its content and
+     let it run into the language button); the title then shrinks. */
+  justify-self: stretch;
+  overflow: hidden;
+}
+
+/* wa-dropdown is display: contents; its trigger button is the grid item. */
+.topbar wa-dropdown > wa-button[slot='trigger'] {
+  grid-area: lang;
+}
+
+.topbar form {
+  grid-area: logout;
+}
+
+.topbar nav {
+  grid-area: nav;
+}
+
+.topbar .lock {
+  grid-area: lock;
+}
+
+/* Locked (LockButton): the controls that would interrupt playback are greyed
+   out. The server refuses them anyway; this only shows it. */
+.locked-note {
+  display: none;
+}
+
+body:has(#lock[data-locked]) .locked-note {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wa-space-2xs);
+}
+
+body:has(#lock[data-locked]) :is(.disturbs, li.current .disturbs-current) {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Its color comes from a hash of the kiosk name (style attribute). */
+.topbar .brand {
+  display: flex;
+  align-items: center;
+  gap: var(--wa-space-2xs);
+  font-weight: var(--wa-font-weight-bold);
+  white-space: nowrap;
+}
+
+.topbar .brand > a {
+  color: inherit;
+  display: flex;
+}
+
+/* The kiosk name (up to 20 characters; the hostname it falls back to may be
+   longer) shortens with an ellipsis where space is tight; the tooltip and the
+   editor show it in full. */
+.topbar .brand {
+  min-width: 0;
+}
+
+#brand-name.editable {
+  min-width: 0;
+  max-inline-size: 20ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The kiosk name opens a popover: the name field, below it the color dots
+   in one row, the chosen one ringed. "auto" is a dashed ring in the color
+   the name would get from its hash. */
+#brand-name {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+}
+
+.brand-popover::part(body) {
+  padding: var(--wa-space-s);
+}
+
+.brand-edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wa-space-s);
+}
+
+.hues {
+  display: flex;
+  gap: var(--wa-space-2xs);
+}
+
+.hue {
+  flex: none;
+  inline-size: 1.625rem;
+  block-size: 1.625rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.hue.auto {
+  background: transparent;
+  border: var(--wa-border-width-m) dashed currentColor;
+}
+
+.hue[aria-pressed='true'] {
+  outline: var(--wa-border-width-m) solid var(--wa-color-text-normal);
+  outline-offset: 2px;
+}
+
+.hue:focus-visible {
+  outline: var(--wa-focus-ring);
+  outline-offset: 2px;
+}
+
+.now-playing {
+  display: flex;
+  align-items: center;
+  gap: var(--wa-space-xs);
+  min-width: 0;
+  font-size: var(--wa-font-size-s);
+  color: var(--wa-color-text-quiet);
+  text-decoration: none;
+}
+
+.now-playing .title {
+  min-width: 0; /* a flex item only shrinks below its text width with this */
+  color: var(--wa-color-text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Only the title shrinks; icon and time stay whole, on one line. */
+.now-playing > :not(.title) {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Narrow phones: the nav with labels beside the icons needs about 470 px,
+   so it becomes four equal tabs with the icon above a small label; row 1
+   drops the playback time (the Player card shows it) and the language icon. */
+@media (width < 32rem) {
+  .topbar-inner {
+    column-gap: var(--wa-space-xs);
+  }
+  .topbar .now-playing > .num {
+    display: none;
+  }
+  .topbar wa-dropdown > wa-button[slot='trigger'] > wa-icon,
+  .topbar .lock .label,
+  .topbar .lock[data-locked] wa-button::part(label) {
+    display: none;
+  }
+  /* Locked: only the icon, as small as the open lock. */
+  .topbar .lock[data-locked] wa-button::part(base) {
+    padding-inline: var(--wa-space-2xs);
+  }
+  .topbar nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .topbar nav wa-button::part(base) {
+    flex-direction: column;
+    height: auto;
+    /* More room above the icon than the label's line gives below it, so the
+       two look even; no side padding: "Einstellungen" fits at 320 px. */
+    padding: var(--wa-space-xs) 0 var(--wa-space-3xs);
+    gap: 0;
+  }
+  .topbar nav wa-button::part(start) {
+    margin: 0;
+  }
+  .topbar nav wa-button::part(label) {
+    padding: 0;
+  }
+  .topbar .label {
+    font-size: var(--wa-font-size-2xs);
+    white-space: nowrap;
+  }
+}
+
+/* --- forms: a narrow column, fields as wide as their content --- */
+
+.form-column {
+  max-inline-size: var(--kiosk-form-width);
+}
+
+/* Capped at the container, so they shrink on phones instead of overflowing. */
+.field-s {
+  inline-size: min(var(--kiosk-field-s), 100%);
+}
+
+.field-m {
+  inline-size: min(var(--kiosk-field-m), 100%);
+}
+
+/* Units ("kbit/s", "s") stay on one line; the number gets the rest. */
+wa-input > [slot='end'],
+wa-number-input > [slot='end'] {
+  white-space: nowrap;
+}
+
+/* --- page header: title left, summary/actions right --- */
+
+.page-head h1 {
+  margin: 0;
+}
+
+/* --- panels: flush cards holding dense lists --- */
+
+wa-card.panel::part(body) {
+  padding: 0;
+}
+
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rows > * {
+  border-bottom: var(--wa-border-width-s) solid var(--wa-color-surface-border);
+}
+
+.rows > :last-child {
+  border-bottom: none;
+}
+
+.empty {
+  padding: var(--wa-space-l);
+  text-align: center;
+  color: var(--wa-color-text-quiet);
+}
+
+/* --- playlist: one line per entry --- */
+
+.playlist > li {
+  display: grid;
+  grid-template-columns: 2.75rem var(--kiosk-thumb-width) minmax(0, 1fr) 6.5rem 2rem;
+  align-items: center;
+  gap: var(--wa-space-s);
+  padding: var(--wa-space-2xs) var(--wa-space-s);
+}
+
+.playlist > li.current {
+  box-shadow: inset 3px 0 0 var(--wa-color-brand-fill-loud);
+}
+
+.playlist > li.dragging {
+  opacity: 0.4;
+}
+
+.playlist .lead {
+  display: flex;
+  align-items: center;
+  gap: var(--wa-space-2xs);
+  color: var(--wa-color-text-quiet);
+  font-size: var(--wa-font-size-s);
+}
+
+.playlist .grip {
+  cursor: grab;
+}
+
+.playlist .now {
+  color: var(--wa-color-brand-on-quiet);
+}
+
+.playlist .thumb {
+  display: block;
+  cursor: zoom-in;
+}
+
+.playlist .thumb img {
+  display: block;
+  width: var(--kiosk-thumb-width);
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--wa-border-radius-s);
+  background: var(--wa-color-neutral-fill-quiet);
+}
+
+.playlist .title {
+  display: grid;
+  gap: var(--wa-space-3xs);
+  min-width: 0;
+}
+
+.playlist .dur {
+  justify-self: end;
+  color: var(--wa-color-text-quiet);
+  font-size: var(--wa-font-size-s);
+  white-space: nowrap;
+}
+
+.playlist .dur wa-number-input {
+  width: 6rem;
+}
+
+/* Values are plain text until clicked. */
+.editable {
+  cursor: text;
+  border-radius: var(--wa-border-radius-s);
+  padding: var(--wa-space-3xs) var(--wa-space-2xs);
+  margin: calc(-1 * var(--wa-space-3xs)) calc(-1 * var(--wa-space-2xs));
+}
+
+.title .editable {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editable:hover {
+  background: var(--wa-color-neutral-fill-quiet);
+}
+
+#row-progress wa-progress-bar {
+  --track-height: 2px;
+}
+
+/* Click-to-seek: a taller hit area around the thin player bar. */
+#player-progress .seek {
+  cursor: pointer;
+  padding-block: var(--wa-space-xs);
+  margin-block: calc(-1 * var(--wa-space-xs));
+}
+
+#player-progress .seek-to {
+  color: var(--wa-color-brand-on-quiet);
+}
+
+/* Playback bars step once per second without easing: an animated step
+   speeds up and slows down, which reads as an uneven playback rate. */
+#player-progress wa-progress-bar::part(indicator),
+#row-progress wa-progress-bar::part(indicator) {
+  transition: none;
+}
+
+/* Pointer devices: handle and menu appear on hover; touch keeps them visible.
+   (wa-dropdown is display: contents, so the trigger button fades.) */
+@media (hover: hover) {
+  .playlist .grip,
+  .playlist .menu > wa-button {
+    opacity: 0;
+    transition: opacity var(--wa-transition-fast);
+  }
+  .playlist > li:hover .grip,
+  .playlist > li:hover .menu > wa-button,
+  .playlist > li:focus-within .menu > wa-button,
+  .playlist .menu[open] > wa-button {
+    opacity: 1;
+  }
+}
+
+/* Files dragged from the desktop: insertion marker and hint. */
+.playlist > li.drop-before {
+  box-shadow: inset 0 2px 0 var(--wa-color-brand-fill-loud);
+}
+
+.playlist > li.drop-after {
+  box-shadow: inset 0 -2px 0 var(--wa-color-brand-fill-loud);
+}
+
+.drop-hint {
+  display: none;
+  padding: var(--wa-space-xs);
+  text-align: center;
+  color: var(--wa-color-brand-on-quiet);
+}
+
+[data-dropzone].dropping .drop-hint {
+  display: block;
+}
+
+wa-card[data-dropzone].dropping {
+  outline: 2px dashed var(--wa-color-brand-border-loud);
+  outline-offset: 2px;
+  border-radius: var(--wa-border-radius-m);
+}
+
+.drop-progress {
+  --track-height: 3px;
+}
+
+wa-dialog.preview img {
+  display: block;
+  width: 100%;
+  border-radius: var(--wa-border-radius-s);
+}
+
+@media (width < 40rem) {
+  .playlist > li {
+    grid-template-columns: 2.25rem var(--kiosk-thumb-width) minmax(0, 1fr) auto 2rem;
+  }
+}
+
+/* --- add: files or a link --- */
+
+.sources {
+  display: grid;
+  gap: var(--wa-space-xs);
+  justify-items: center;
+}
+
+.sources > .dropzone,
+.sources > .link-row {
+  width: 100%;
+}
+
+.sources .link-row wa-input {
+  flex: 1 1 18rem;
+}
+
+.dropzone {
+  display: block;
+  padding: var(--wa-space-l);
+  border: var(--wa-border-width-m) dashed var(--wa-color-surface-border);
+  border-radius: var(--wa-border-radius-m);
+  text-align: center;
+  color: var(--wa-color-text-quiet);
+  cursor: pointer;
+}
+
+.dropzone:hover,
+.dropzone:focus-within {
+  border-color: var(--wa-color-brand-border-loud);
+  color: var(--wa-color-text-normal);
+}
+
+.dropzone:focus-within {
+  outline: var(--wa-focus-ring);
+  outline-offset: 2px;
+}
+
+.jobs > div {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) 8rem 2rem;
+  align-items: center;
+  gap: var(--wa-space-s);
+  padding: var(--wa-space-xs) var(--wa-space-s);
+  font-size: var(--wa-font-size-s);
+}
+
+.jobs wa-tag {
+  justify-self: start;
+}
+
+.jobs .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jobs .error {
+  grid-column: 2 / -1;
+  color: var(--wa-color-danger-on-quiet);
+  font-size: var(--wa-font-size-xs);
+}
+
+.url-preview {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: var(--wa-space-s);
+  align-items: start;
+}
+
+.url-preview .no-thumb {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--wa-border-radius-s);
+  background: var(--wa-color-neutral-fill-quiet);
+  color: var(--wa-color-text-quiet);
+  font-size: var(--wa-font-size-2xl);
+}
+
+.url-preview img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--wa-border-radius-s);
+  background: var(--wa-color-neutral-fill-quiet);
+}
+
+@media (width < 40rem) {
+  .url-preview {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- system --- */
+
+.access {
+  display: flex;
+  gap: var(--wa-space-m);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.access img {
+  border-radius: var(--wa-border-radius-s);
+  image-rendering: pixelated;
+}
+
+.fingerprint {
+  font-size: var(--wa-font-size-2xs);
+  word-break: break-all;
+  color: var(--wa-color-text-quiet);
+}
+
+.stat {
+  font-variant-numeric: tabular-nums;
+}
+
+.log > div {
+  display: grid;
+  grid-template-columns: 9.5rem 3.5rem 1fr;
+  gap: var(--wa-space-s);
+  padding: var(--wa-space-3xs) var(--wa-space-s);
+  font-family: var(--wa-font-family-code);
+  font-size: var(--wa-font-size-2xs);
+}
+
+.log .at {
+  color: var(--wa-color-text-quiet);
+}
+
+.log .WARN {
+  color: var(--wa-color-warning-on-quiet);
+}
+
+.log .ERROR {
+  color: var(--wa-color-danger-on-quiet);
+}
+
+/* --- login --- */
+
+.login {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+}
+
+.login wa-card {
+  width: min(22rem, 92vw);
+}
+
+[x-cloak] {
+  display: none !important;
+}
+
+/* --- Wi-Fi networks (settings) --- */
+
+.wifi > * {
+  padding: var(--wa-space-2xs) 0;
+  min-height: 2.25rem;
+}
+
+.wifi .ssid {
+  overflow-wrap: anywhere;
+}
+
+.wifi .dim .ssid,
+.wifi .quiet {
+  color: var(--wa-color-text-quiet);
+}
+
+.wifi .signal.good { color: var(--wa-color-success-on-quiet); }
+.wifi .signal.fair { color: var(--wa-color-warning-on-quiet); }
+.wifi .signal.weak { color: var(--wa-color-danger-on-quiet); }
+.wifi .signal.none { color: var(--wa-color-text-quiet); opacity: 0.5; }

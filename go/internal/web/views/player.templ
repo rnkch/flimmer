@@ -1,0 +1,104 @@
+package views
+
+// PlayerPanel sits on top of the playlist: what plays, the controls, and a
+// field to play a stream or link instead. Only PlayerCard refreshes itself,
+// so a link being typed is never morphed away.
+templ PlayerPanel(n NowPlaying) {
+	<wa-card>
+		<div class="wa-stack wa-gap-s">
+			@PlayerCard(n)
+			<wa-divider></wa-divider>
+			<form class="wa-stack wa-gap-2xs" hx-post="/player/stream" hx-swap="none">
+				<div class="wa-cluster wa-gap-xs disturbs">
+					<wa-input name="url" type="url" placeholder={ t(ctx, "https://… or rtsp://…") } aria-label={ t(ctx, "Stream or video URL") } size="s" style="flex: 1 1 16rem;">
+						<wa-icon slot="start" name="tower-broadcast"></wa-icon>
+					</wa-input>
+					<wa-button type="submit" size="s">{ t(ctx, "Play") }</wa-button>
+				</div>
+				<span class="wa-caption-xs">{ t(ctx, "Replaces the playlist until “Back to playlist” is pressed.") }</span>
+			</form>
+		</div>
+	</wa-card>
+}
+
+templ PlayerCard(n NowPlaying) {
+	<div id="player-card" hx-get="/player/card" hx-trigger="player from:body" hx-swap="outerMorph">
+		<div class="wa-stack wa-gap-s">
+			<div class="wa-stack wa-gap-3xs">
+				<span class="wa-caption-s">
+					switch {
+						case n.Streaming != "":
+							{ t(ctx, "Stream") }
+						case n.Idle:
+							{ t(ctx, "Stopped") }
+						case n.Paused:
+							{ t(ctx, "Paused") }
+						default:
+							{ t(ctx, "Playing") }
+					}
+					if n.Position > 0 {
+						<span class="num">· { t(ctx, "Position %d", n.Position) }</span>
+					}
+				</span>
+				<span class="wa-heading-m">
+					if n.Streaming != "" {
+						{ n.Streaming }
+					} else if n.Idle {
+						–
+					} else {
+						{ n.Title }
+					}
+				</span>
+			</div>
+			@PlayerProgress(n)
+			<div class="wa-cluster wa-gap-xs" hx-swap:inherited="none">
+				<wa-button-group class="disturbs" label={ t(ctx, "Playback") }>
+					<wa-button id="btn-prev" appearance="filled" hx-post="/player/prev"><wa-icon name="backward-step" label={ t(ctx, "Previous") }></wa-icon></wa-button>
+					<wa-button id="btn-pause" variant="brand" hx-post="/player/pause">
+						if n.Paused {
+							<wa-icon name="play" label={ t(ctx, "Resume") }></wa-icon>
+						} else {
+							<wa-icon name="pause" label={ t(ctx, "Pause") }></wa-icon>
+						}
+					</wa-button>
+					<wa-button id="btn-next" appearance="filled" hx-post="/player/next"><wa-icon name="forward-step" label={ t(ctx, "Next") }></wa-icon></wa-button>
+				</wa-button-group>
+				<wa-tooltip for="btn-prev">{ t(ctx, "Previous") }</wa-tooltip>
+				<wa-tooltip for="btn-pause">{ t(ctx, "Pause / resume") }</wa-tooltip>
+				<wa-tooltip for="btn-next">{ t(ctx, "Next") }</wa-tooltip>
+				if n.Streaming != "" {
+					<wa-button class="disturbs" variant="brand" appearance="outlined" hx-post="/player/resume"><wa-icon slot="start" name="list"></wa-icon> { t(ctx, "Back to playlist") }</wa-button>
+				}
+				<span class="locked-note wa-caption-xs"><wa-icon name="lock"></wa-icon> { t(ctx, "Locked: the controls are off until it's unlocked at the top.") }</span>
+				<span style="flex: 1;"></span>
+				<wa-button class="disturbs" size="s" appearance="plain" hx-post="/player/stats"><wa-icon slot="start" name="chart-simple"></wa-icon> { t(ctx, "Stats on screen") }</wa-button>
+			</div>
+		</div>
+	</div>
+}
+
+// PlayerProgress is pushed every second over SSE while a video plays. For
+// videos and streams with a length, clicking the bar jumps there (seek.js).
+templ PlayerProgress(n NowPlaying) {
+	<div id="player-progress" class="wa-stack wa-gap-3xs" { seekAttrs(n)... }>
+		if n.Duration > 0 {
+			if n.Seekable {
+				<div class="seek disturbs" title={ t(ctx, "Click to jump to a position") }
+					hx-post="/player/seek" hx-trigger="seek" hx-include="#seek-pos" hx-swap="none"
+					x-on:click="jump($event)" x-on:mousemove="preview($event)" x-on:mouseleave="hover = ''">
+					<wa-progress-bar value={ percent(n.TimePos, n.Duration) } style={ barStyle(percent(n.TimePos, n.Duration), "") }></wa-progress-bar>
+				</div>
+				<input type="hidden" id="seek-pos" name="pos" x-ref="pos"/>
+			} else {
+				<wa-progress-bar value={ percent(n.TimePos, n.Duration) } style={ barStyle(percent(n.TimePos, n.Duration), "") }></wa-progress-bar>
+			}
+			<div class="wa-split wa-caption-xs num">
+				<span>{ Dur(n.TimePos) }</span>
+				if n.Seekable {
+					<span class="seek-to" x-text="hover" hx-morph-skip></span>
+				}
+				<span>{ Dur(n.Duration) }</span>
+			</div>
+		}
+	</div>
+}

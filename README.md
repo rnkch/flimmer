@@ -1,0 +1,93 @@
+# Flimmer
+
+Turn any screen into a looping display, managed from your phone.
+
+Flimmer turns a screen (a TV in a shop window, a monitor in a lobby, an old
+CRT) into a display that loops your images, videos and streams. It is a single
+Go binary that drives [mpv](https://mpv.io) and keeps its state in SQLite.
+You manage it from a phone: scan the QR code on the screen, log in, upload
+files or paste links. Videos are converted so the hardware can play them
+smoothly. Reorder, rename or add entries while it plays: what is on screen
+keeps running. A lock keeps anyone from interrupting playback during an
+event. An optional Telegram bot gives remote control.
+
+It grew up on a Raspberry Pi 3B+ driving a PAL CRT over composite, which is
+still the best-tested setup ([deploy/raspberry-pi](deploy/raspberry-pi)).
+
+## Features
+
+- Playlist of images (with display time), videos and streams; edited live
+  without restarting playback
+- Web UI (German, English): upload files of any size, add links (yt-dlp),
+  drag to reorder, player controls, system status, Wi-Fi settings
+  (NetworkManager), playback lock
+- QR code with the web address on the screen; self-signed HTTPS on the local
+  network
+- Uploads are checked with ffprobe and re-encoded to H.264 only when the
+  device can't play them as they are
+- Optional Telegram bot (German): uploads, playlist, player controls,
+  status, screenshots
+
+## Requirements
+
+Linux with mpv (with DRM/KMS or a desktop session), ffmpeg/ffprobe,
+`heif-convert` for HEIC photos, yt-dlp for links, NetworkManager (`nmcli`)
+for the Wi-Fi settings. Building needs Go (see `go/go.mod`).
+
+## Run it
+
+```bash
+cd go
+go build ./cmd/flimmer
+./flimmer -encoder libx264
+```
+
+On first start without a password, flimmer generates one and logs it
+(`generated the web password`). The web UI listens on
+`http://127.0.0.1:8080` and `https://<LAN address>:8443`. State lives in
+`~/.local/share/flimmer` (`-data`), media in its `media/` folder (`-media`).
+`./flimmer -h` lists all options. `-encoder` defaults to the Raspberry Pi's
+hardware encoder (`h264_v4l2m2m`); use `libx264` elsewhere.
+
+Optional `~/.config/flimmer/credentials` (`-credentials`):
+
+```
+BOT_TOKEN=<Telegram bot token>
+GROUP_ID=<Telegram group the bot answers in>
+WEB_PASSWORD=<first web password, change it later in the web UI>
+```
+
+A fallback Wi-Fi network `flimmer` / `flimmer` (`-fallback-wifi`) is saved
+with the lowest priority: start a phone hotspot with that name and password
+to reach a device whose Wi-Fi is gone.
+
+## Raspberry Pi
+
+`deploy/raspberry-pi/setup.sh` prepares a fresh Raspberry Pi OS;
+`deploy/raspberry-pi/deploy.sh [user@]host` builds, installs the systemd
+service and the boot files (composite PAL by default, HDMI when
+`~/.needs-hdmi` exists on the Pi) and restarts flimmer.
+
+## Development
+
+```bash
+cd go
+./dev.sh          # http://127.0.0.1:8090, no Telegram, password flimmer-dev-password
+go test ./...     # needs mpv and ffmpeg
+```
+
+Templates are [templ](https://templ.guide) (`go tool templ generate
+./internal/web/views`), queries [sqlc](https://sqlc.dev) (`go tool sqlc
+generate`). The browser code (htmx, Alpine.js, Web Awesome) is vendored and
+bundled with esbuild at startup.
+
+## License
+
+GNU General Public License v3.0, see [LICENSE](LICENSE).
+
+Bundled third-party code: [htmx](https://htmx.org) (`vendor/htmx/LICENSE`),
+[Alpine.js](https://alpinejs.dev) (MIT),
+[Web Awesome](https://webawesome.com) (`vendor/webawesome/LICENSE.md`),
+[Font Awesome Free](https://fontawesome.com) icons (`vendor/icons/LICENSE.txt`),
+colors from [tokyonight.nvim](https://github.com/folke/tokyonight.nvim)
+(Apache-2.0).

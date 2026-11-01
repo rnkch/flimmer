@@ -1,0 +1,82 @@
+package views
+
+import "github.com/rnkch/flimmer/internal/kiosk"
+
+// WifiCard: saved networks and networks in range (loaded after the page,
+// a scan takes a moment), plus a form to add one. Picking a network in range
+// fills in its name.
+templ WifiCard() {
+	<wa-card id="wifi-card" x-data="{ ssid: '' }">
+		<div slot="header" class="wa-split">
+			<span class="wa-heading-s">{ t(ctx, "Wi-Fi") }</span>
+			<wa-button id="wifi-scan" size="s" appearance="plain" hx-get="/settings/wifi?scan=1" hx-target="#wifi" hx-swap="outerMorph" hx-indicator="#wifi-scan">
+				<wa-icon name="rotate" label={ t(ctx, "Search again") }></wa-icon>
+			</wa-button>
+			<wa-tooltip for="wifi-scan">{ t(ctx, "Search again") }</wa-tooltip>
+		</div>
+		<div class="wa-stack wa-gap-m">
+			<div id="wifi" class="rows wifi" hx-get="/settings/wifi" hx-trigger="load, network from:body" hx-swap="outerMorph">
+				<div class="empty"><wa-spinner></wa-spinner></div>
+			</div>
+			<form class="wa-stack wa-gap-m" hx-post="/settings/wifi" hx-target="#wifi-card" hx-swap="outerHTML">
+				<wa-input class="field-m" name="ssid" x-model="ssid" label={ t(ctx, "Network name") } required maxlength="32" size="s" autocomplete="off"></wa-input>
+				<wa-input class="field-m" x-ref="password" type="password" name="password" label={ t(ctx, "Wi-Fi password") } password-toggle maxlength="63" size="s" autocomplete="off"></wa-input>
+				<span class="wa-caption-xs">{ t(ctx, "Saved networks are used automatically when the current one is gone. Empty password = open network.") }</span>
+				<div>
+					<wa-button type="submit" variant="brand" size="s"><wa-icon slot="start" name="plus"></wa-icon> { t(ctx, "Save network") }</wa-button>
+				</div>
+			</form>
+		</div>
+	</wa-card>
+}
+
+templ WifiList(list []kiosk.WifiNetwork, err string) {
+	<div id="wifi" class="rows wifi" hx-get="/settings/wifi" hx-trigger="network from:body" hx-swap="outerMorph">
+		if err != "" {
+			<wa-callout variant="warning" size="s"><wa-icon slot="icon" name="triangle-exclamation"></wa-icon>{ err }</wa-callout>
+		} else if len(list) == 0 {
+			<div class="empty">{ t(ctx, "No networks found.") }</div>
+		}
+		for _, n := range list {
+			<div class={ "wa-split", templ.KV("dim", !n.Saved && !n.InRange) }>
+				<div class="wa-cluster wa-gap-xs">
+					<wa-icon name="wifi" class={ signalClass(n) } label={ signalLabel(ctx, n) }></wa-icon>
+					<span class="ssid">{ n.SSID }</span>
+					if n.Security != "" {
+						<wa-icon name="lock" class="quiet" label={ t(ctx, "Password protected") }></wa-icon>
+					}
+					if n.Active {
+						<wa-tag size="xs" variant="success">{ t(ctx, "connected") }</wa-tag>
+					}
+					if n.Fallback {
+						<wa-tag size="xs" variant="neutral">{ t(ctx, "fallback") }</wa-tag>
+					}
+					if n.Saved && !n.InRange {
+						<span class="wa-caption-xs">{ t(ctx, "not in range") }</span>
+					}
+				</div>
+				<div class="wa-cluster wa-gap-2xs">
+					if n.Saved && !n.Active && n.InRange {
+						<wa-button class="disturbs" size="s" appearance="outlined" hx-post="/settings/wifi/connect" hx-vals={ vals("name", n.Name) } hx-swap="none"
+							hx-confirm={ t(ctx, "Switch to “%s” now? If you are connected through the Pi's current network, this page will stop responding: join “%s” and scan the QR code on the screen.", n.SSID, n.SSID) }>
+							{ t(ctx, "Connect") }
+						</wa-button>
+					}
+					if n.Saved && !n.Active && !n.Fallback {
+						<wa-button size="s" appearance="plain" variant="danger" hx-post="/settings/wifi/delete" hx-vals={ vals("name", n.Name) } hx-target="#wifi" hx-swap="outerMorph"
+							hx-confirm={ t(ctx, "Forget “%s”?", n.SSID) }>
+							<wa-icon name="trash" label={ t(ctx, "Forget") }></wa-icon>
+						</wa-button>
+					}
+					if !n.Saved && n.Enterprise() {
+						<span class="wa-caption-xs">{ t(ctx, "802.1X, not supported") }</span>
+					} else if !n.Saved {
+						<wa-button size="s" appearance="plain" data-ssid={ n.SSID } x-on:click="ssid = $el.dataset.ssid; $nextTick(() => $refs.password.focus())">
+							<wa-icon slot="start" name="plus"></wa-icon> { t(ctx, "Add") }
+						</wa-button>
+					}
+				</div>
+			</div>
+		}
+	</div>
+}

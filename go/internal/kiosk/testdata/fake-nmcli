@@ -1,0 +1,68 @@
+#!/bin/bash
+# Fake nmcli for the tests and dev.sh: implements just the calls kiosk/wifi.go
+# makes. Saved connections are files in $FAKE_NMCLI_DIR/con (first line =
+# SSID), $FAKE_NMCLI_DIR/active names the connected one, $FAKE_NMCLI_DIR/scan
+# holds "SSID:SIGNAL:SECURITY" lines (nmcli -t escaping), a file
+# $FAKE_NMCLI_DIR/fail/<name> makes connecting to <name> fail. Every call is
+# appended to $FAKE_NMCLI_DIR/calls.
+set -e
+D=${FAKE_NMCLI_DIR:?FAKE_NMCLI_DIR not set}
+mkdir -p "$D/con"
+echo "$*" >>"$D/calls"
+esc() { sed 's/\\/\\\\/g; s/:/\\:/g'; }
+active() { [ -e "$D/active" ] && cat "$D/active"; }
+
+if [ "$1" = "--wait" ]; then shift 2; fi
+case "$1 $2 $3 $4" in
+"-t -f NAME,TYPE,DEVICE connection")
+	for f in "$D"/con/*; do
+		[ -e "$f" ] || continue
+		n=$(basename "$f") dev=
+		[ "$(active)" = "$n" ] && dev=wlan0
+		printf '%s:802-11-wireless:%s\n' "$(printf %s "$n" | esc)" "$dev"
+	done
+	echo "Wired connection 1:802-3-ethernet:eth0"
+	;;
+"-t -f NAME connection")
+	for f in "$D"/con/*; do [ -e "$f" ] && basename "$f" | esc; done
+	echo "Wired connection 1"
+	;;
+"-g 802-11-wireless.ssid connection show")
+	[ -e "$D/con/$6" ] || { echo "Error: $6 - no such connection profile." >&2; exit 10; }
+	head -1 "$D/con/$6" | esc
+	;;
+"-t -f SSID,SIGNAL,SECURITY device")
+	[ -e "$D/scan" ] && cat "$D/scan"
+	[ "$8" = "yes" ] && sleep 1
+	true
+	;;
+"connection add type wifi")
+	shift 4
+	while [ $# -gt 0 ]; do
+		case "$1" in
+		con-name) name=$2 ;;
+		ssid) ssid=$2 ;;
+		esac
+		shift 2
+	done
+	[ -e "$D/con/$name" ] && { echo "Error: connection '$name' exists." >&2; exit 1; }
+	echo "$ssid" >"$D/con/$name"
+	echo "Connection '$name' successfully added."
+	;;
+"connection modify id "* | "connection delete id "* | "connection up id "*)
+	n=$4
+	[ -e "$D/con/$n" ] || { echo "Error: unknown connection '$n'." >&2; exit 10; }
+	case "$2" in
+	delete) rm "$D/con/$n" ;;
+	up)
+		sleep 1
+		[ -e "$D/fail/$n" ] && { echo "Error: Connection activation failed." >&2; exit 4; }
+		echo "$n" >"$D/active"
+		;;
+	esac
+	;;
+*)
+	echo "fake-nmcli: unsupported: $*" >&2
+	exit 2
+	;;
+esac

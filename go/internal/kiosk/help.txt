@@ -1,0 +1,28 @@
+📺 Flimmer — Anleitung
+
+Fotos und Videos einfach hier in die Gruppe schicken, sie landen in der Playlist.
+
+Beschriftung (optional): <Position> <Name> [<Sekunden>]
+• „05 logo 10“ – Platz 5, Name „logo“, 10 Sek.
+• „willkommen“ – ans Ende, Name „willkommen“
+• ohne Beschriftung – ans Ende, Name aus der Datei
+Sekunden gelten nur für Bilder; ohne Angabe gilt die Standarddauer.
+
+Links:
+• https://… (z. B. YouTube) – Video wird heruntergeladen
+• rtsp://… – wird sofort live gezeigt, zurück mit /restart
+Dateien über 20 MB und Streams in der Playlist: über die Weboberfläche (/qr).
+
+Befehle:
+/slides – Playlist: verschieben, umbenennen, Dauer, löschen
+/next, /prev – nächstes/vorheriges Bild oder Video
+/pause – Pause/Fortsetzen
+/status – Wiedergabe, Speicher, Temperatur, Adresse, Version
+/screenshot – Foto vom aktuellen Bildschirm
+/qr – QR-Code zur Weboberfläche auf dem Bildschirm
+/passwort – neues Passwort für die Weboberfläche
+/restart – Player neu starten (/restart all: ganzer Dienst)
+/display – mpv-Statistik auf dem Bildschirm
+/menu – Tastenmenü
+/help – diese Hilfe
+updatehilfe <Text> – Hilfetext ändern (auch in der Weboberfläche)

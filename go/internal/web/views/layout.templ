@@ -1,0 +1,212 @@
+package views
+
+import (
+	"strings"
+
+	"github.com/rnkch/flimmer/internal/web/i18n"
+)
+
+// head is shared by every page, including login.
+templ head(title, css, js string) {
+	<meta charset="utf-8"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+	<meta name="htmx-config" content='{"extensions": "sse, alpine-compat"}'/>
+	<title>{ title } · Flimmer</title>
+	<!-- Follow the OS color scheme before first paint (theme.css has both). -->
+	<script>document.documentElement.classList.add(matchMedia('(prefers-color-scheme: dark)').matches ? 'wa-dark' : 'wa-light')</script>
+	<link rel="stylesheet" href={ "/static/" + css }/>
+	<script defer src={ "/static/" + js }></script>
+}
+
+// langSwitch shows the current UI language and offers the others; the
+// choice is stored in a cookie and the page reloads.
+templ langSwitch() {
+	<wa-dropdown placement="bottom-end">
+		<wa-button slot="trigger" size="s" appearance="plain" with-caret>
+			<wa-icon slot="start" name="language" label={ t(ctx, "Language") }></wa-icon>
+			{ strings.ToUpper(i18n.Lang(ctx)) }
+		</wa-button>
+		for _, l := range languages {
+			if l.Code == i18n.Lang(ctx) {
+				<wa-dropdown-item type="checkbox" checked>{ l.Name }</wa-dropdown-item>
+			} else {
+				<wa-dropdown-item type="checkbox" hx-post="/lang" hx-vals={ `{"lang": "` + l.Code + `"}` } hx-swap="none">{ l.Name }</wa-dropdown-item>
+			}
+		}
+	</wa-dropdown>
+}
+
+templ Layout(p Page) {
+	<!DOCTYPE html>
+	<html lang={ i18n.Lang(ctx) } class="wa-theme-default wa-palette-tokyonight">
+		<head>
+			@head(t(ctx, p.Title), p.CSS, p.JS)
+		</head>
+		<body data-i18n={ jsStrings(ctx) }>
+			<header class="topbar">
+				<div class="topbar-inner">
+					@BrandName(p.Name, p.NameSet, p.Hue)
+					@LockButton(p.Locked)
+					<nav class="wa-cluster wa-gap-3xs">
+						for _, n := range nav {
+							if n.Key == p.Active {
+								<wa-button href={ n.Href } size="s" appearance="filled" variant="brand" aria-current="page">
+									<wa-icon slot="start" name={ n.Icon } label={ t(ctx, n.Label) }></wa-icon>
+									<span class="label">{ t(ctx, n.Label) }</span>
+								</wa-button>
+							} else {
+								<wa-button href={ n.Href } size="s" appearance="plain">
+									<wa-icon slot="start" name={ n.Icon } label={ t(ctx, n.Label) }></wa-icon>
+									<span class="label">{ t(ctx, n.Label) }</span>
+								</wa-button>
+							}
+						}
+					</nav>
+					@NowPlayingBar(p.Now)
+					@langSwitch()
+					<form method="post" action="/logout">
+						<wa-button id="logout" type="submit" size="s" appearance="plain">
+							<wa-icon name="right-from-bracket" label={ t(ctx, "Log out") }></wa-icon>
+						</wa-button>
+						<wa-tooltip for="logout">{ t(ctx, "Log out") }</wa-tooltip>
+					</form>
+				</div>
+			</header>
+			<!-- Live updates: unnamed messages carry <hx-partial>s, named events
+			     ("player", "playlist", "job", ...) bubble to body for hx-trigger="... from:body". -->
+			<div hx-sse:connect="/events" hidden></div>
+			<main class="shell wa-stack wa-gap-m">
+				{ children... }
+			</main>
+			<wa-toast placement="bottom-end"></wa-toast>
+		</body>
+	</html>
+}
+
+// LockButton locks playback (kiosk.SettingLocked): nothing that would
+// interrupt it works until it's unlocked. The controls it blocks carry class
+// "disturbs" (or "disturbs-current" in the playing row); app.css greys them
+// out while #lock has data-locked. Refreshes on the "settings" event, so
+// every open page follows.
+templ LockButton(locked bool) {
+	<div id="lock" class="lock" data-locked?={ locked } hx-get="/lock" hx-trigger="settings from:body" hx-swap="outerMorph">
+		if locked {
+			<wa-button id="lock-btn" size="s" variant="warning" appearance="filled" hx-post="/lock" hx-vals='{"locked": "false"}' hx-target="#lock" hx-swap="outerMorph">
+				<wa-icon slot="start" name="lock" label={ t(ctx, "Locked") }></wa-icon>
+				<span class="label">{ t(ctx, "Locked") }</span>
+			</wa-button>
+			<wa-tooltip for="lock-btn">{ t(ctx, "Playback is locked: nothing can interrupt it. Click to unlock.") }</wa-tooltip>
+		} else {
+			<wa-button id="lock-btn" size="s" appearance="plain" hx-post="/lock" hx-vals='{"locked": "true"}' hx-target="#lock" hx-swap="outerMorph">
+				<wa-icon name="lock-open" label={ t(ctx, "Lock") }></wa-icon>
+			</wa-button>
+			<wa-tooltip for="lock-btn">{ t(ctx, "Lock playback: blocks everything that would interrupt it") }</wa-tooltip>
+		}
+	</div>
+}
+
+// PageHead: title on the left, summary and actions on the right. title is a translation key.
+templ PageHead(title string) {
+	<div class="page-head wa-split wa-align-items-center">
+		<h1 class="wa-heading-l">{ t(ctx, title) }</h1>
+		<div class="wa-cluster wa-gap-xs wa-align-items-center">
+			{ children... }
+		</div>
+	</div>
+}
+
+// BrandName is the kiosk's name in the header; click it to rename (only the
+// label: the system hostname stays). Enter or leaving the field saves, Escape
+// cancels, an empty name brings back the hostname.
+// BrandName is the kiosk's name in the header, in the chosen color or one
+// from a hash of the name. Clicking it opens a popover with the name field
+// (set = the stored name, "" while the hostname is shown) and the colors:
+// "auto" plus the nine hues. The name is selected on opening, so typing
+// replaces it. Enter or a color dot saves both; Escape or a click outside
+// closes without saving and resets the field.
+templ BrandName(name, set, hue string) {
+	<div id="brand" class="brand" style={ hueColor(nameHue(name, hue)) }>
+		<a class="wa-link-plain" href="/playlist"><wa-icon name="tv" label={ t(ctx, "Playlist") }></wa-icon></a>
+		<button id="brand-name" type="button" class="editable" title={ name + " – " + t(ctx, "Click to rename this kiosk") }>{ name }</button>
+		<wa-popover for="brand-name" placement="bottom-start" class="brand-popover"
+			hx-on:wa-after-show="const i = this.querySelector('wa-input'); i.focus(); i.select()"
+			hx-on:wa-after-hide="this.querySelector('form').reset()">
+			<form class="brand-edit" hx-post="/name" hx-target="#brand" hx-swap="outerHTML">
+				<wa-input name="name" value={ set } placeholder={ hostname() } maxlength={ itoa(maxNameLen) } size="s" label={ t(ctx, "Kiosk name") }></wa-input>
+				<div class="hues" role="group" aria-label={ t(ctx, "Color") }>
+					<button type="submit" name="hue" value="auto" class="hue auto" style={ hueColor(nameHue(name, "")) }
+						title={ t(ctx, "Automatic (from the name)") } aria-label={ t(ctx, "Automatic (from the name)") }
+						aria-pressed={ boolStr(hue == "") }></button>
+					for _, h := range nameHueList {
+						<button type="submit" name="hue" value={ h } class="hue" style={ hueSwatch(h) }
+							title={ t(ctx, hueLabels[h]) } aria-label={ t(ctx, hueLabels[h]) }
+							aria-pressed={ boolStr(hue == h) }></button>
+					}
+				</div>
+			</form>
+		</wa-popover>
+	</div>
+}
+
+templ NowPlayingBar(n NowPlaying) {
+	<a id="now-playing" class="now-playing" href="/playlist">
+		switch {
+			case n.Streaming != "":
+				<wa-icon name="tower-broadcast"></wa-icon>
+				<span class="title">{ n.Streaming }</span>
+			case n.Idle:
+				<span>{ t(ctx, "Nothing is playing") }</span>
+			default:
+				if n.Paused {
+					<wa-icon name="pause"></wa-icon>
+				} else {
+					<wa-icon name="play"></wa-icon>
+				}
+				<span class="title">
+					if n.Position > 0 {
+						<span class="num">{ itoa(n.Position) }.</span>
+					}
+					{ n.Title }
+				</span>
+				if n.Duration > 0 {
+					<span class="num">{ Dur(n.TimePos) } / { Dur(n.Duration) }</span>
+				}
+		}
+	</a>
+}
+
+templ Login(css, js, errMsg string, noPassword bool) {
+	<!DOCTYPE html>
+	<html lang={ i18n.Lang(ctx) } class="wa-theme-default wa-palette-tokyonight">
+		<head>
+			@head(t(ctx, "Log in"), css, js)
+		</head>
+		<body data-i18n={ jsStrings(ctx) }>
+			<main class="login">
+				<wa-card>
+					<form method="post" action="/login" class="wa-stack">
+						<div class="wa-split">
+							<h1 class="wa-heading-m"><wa-icon name="tv"></wa-icon> Flimmer</h1>
+							@langSwitch()
+						</div>
+						if noPassword {
+							<wa-callout variant="warning">
+								<wa-icon slot="icon" name="circle-exclamation"></wa-icon>
+								@templ.Raw(t(ctx, "No password set yet. Add %s to %s and restart the service.", "<code>WEB_PASSWORD=…</code>", "<code>~/.config/flimmer/credentials</code>"))
+							</wa-callout>
+						} else {
+							<wa-input type="password" name="password" label={ t(ctx, "Password") } autocomplete="current-password" required autofocus password-toggle></wa-input>
+							if errMsg != "" {
+								<wa-callout variant="danger" size="s">
+									<wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
+									{ t(ctx, errMsg) }
+								</wa-callout>
+							}
+							<wa-button type="submit" variant="brand">{ t(ctx, "Log in") }</wa-button>
+						}
+					</form>
+				</wa-card>
+			</main>
+		</body>
+	</html>
+}

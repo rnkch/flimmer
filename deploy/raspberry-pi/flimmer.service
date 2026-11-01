@@ -1,0 +1,22 @@
+# Installed by deploy.sh as /etc/systemd/system/flimmer.service, with User=
+# and /home/pi replaced by the deploying user and their home directory.
+[Unit]
+Description=Flimmer looping display (mpv, web UI, Telegram bot)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi
+ExecStart=/home/pi/.local/bin/flimmer
+Restart=always
+RestartSec=3
+# yt-dlp and deno (installed by setup.sh) live in ~/.local/bin.
+Environment=PATH=/home/pi/.local/bin:/usr/local/bin:/usr/bin:/bin
+Nice=-5
+# Output goes to the journal (journalctl -u flimmer), which rotates it;
+# journald-flimmer.conf keeps it across reboots, capped at 50 MB.
+
+[Install]
+WantedBy=multi-user.target

@@ -5,8 +5,10 @@ package web
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/tls"
 	"embed"
+	"encoding/hex"
 	"errors"
 	"io/fs"
 	"log/slog"
@@ -34,6 +36,10 @@ type Server struct {
 	bundle bundle.Result
 	icons  fs.FS
 
+	// boot is new on every start; every response carries it (X-Boot) so a page
+	// can tell that the server has restarted (app.js, "serverRestarting").
+	boot string
+
 	loginMu  sync.Mutex
 	failures int
 }
@@ -55,7 +61,13 @@ func New(k *kiosk.Service, certs *access.Certs) (*Server, error) {
 		time.Since(start).Round(time.Millisecond),
 	)
 	icons, _ := fs.Sub(files, "vendor/icons")
-	return &Server{k: k, certs: certs, bundle: res, icons: icons}, nil
+	id := make([]byte, 8)
+	if _, err := rand.Read(id); err != nil {
+		return nil, err
+	}
+	return &Server{
+		k: k, certs: certs, bundle: res, icons: icons, boot: hex.EncodeToString(id),
+	}, nil
 }
 
 func (s *Server) Handler() http.Handler {
@@ -135,7 +147,11 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/", s.requireLogin(app))
 
 	// Rejects state-changing requests from other sites (Sec-Fetch-Site / Origin).
-	return http.NewCrossOriginProtection().Handler(i18n.Middleware(mux))
+	h := http.NewCrossOriginProtection().Handler(i18n.Middleware(mux))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Boot", s.boot)
+		h.ServeHTTP(w, r)
+	})
 }
 
 func (s *Server) requireLogin(next http.Handler) http.Handler {

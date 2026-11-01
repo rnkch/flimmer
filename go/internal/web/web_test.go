@@ -142,3 +142,26 @@ func TestEnglishPagesHaveNoGerman(t *testing.T) {
 		}
 	}
 }
+
+// Every response carries the server's boot id, so a page can tell that the
+// server restarted (app.js, "serverRestarting"): same within one start,
+// different between starts.
+func TestBootID(t *testing.T) {
+	get := func(s *Server, path string) string {
+		rec := httptest.NewRecorder()
+		s.Handler().ServeHTTP(rec, httptest.NewRequest("GET", path, nil))
+		return rec.Header().Get("X-Boot")
+	}
+	a, _ := newServer(t)
+	b, _ := newServer(t)
+	id := get(a, "/login")
+	if len(id) != 16 {
+		t.Fatalf("boot id %q", id)
+	}
+	if get(a, "/login") != id || get(a, "/playlist") != id { // /playlist redirects to the login
+		t.Fatal("the boot id changed within one start, or is missing on a redirect")
+	}
+	if get(b, "/login") == id {
+		t.Fatal("two starts share a boot id")
+	}
+}

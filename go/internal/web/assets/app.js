@@ -52,6 +52,29 @@ initDropUpload();
 // Inline editors arrive with [autofocus]; focus them after the swap.
 htmx.onLoad((elt) => elt.querySelector?.('[autofocus]')?.focus());
 
+// After the service restarts itself (an upgrade, "Restart service") the server sends
+// HX-Trigger "serverRestarting". The page is stale then (new version, maybe new assets),
+// so wait until the server answers again with another boot id (X-Boot) and reload. A
+// server that is down gives no id; whatever answers next counts as the new one. Gives up
+// waiting after two minutes and reloads anyway.
+document.addEventListener('serverRestarting', async () => {
+  const bootId = async () => {
+    try {
+      return (await fetch('/login', { cache: 'no-store' })).headers.get('X-Boot');
+    } catch {
+      return null;
+    }
+  };
+  const before = await bootId();
+  const until = Date.now() + 120_000;
+  while (Date.now() < until) {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const now = await bootId();
+    if (now && now !== before) break;
+  }
+  location.reload();
+});
+
 // Notifications. The server sends HX-Trigger: {"showToast": {"message", "variant"}};
 // client code dispatches the same event.
 const icons = { success: 'circle-check', danger: 'triangle-exclamation', warning: 'circle-exclamation' };

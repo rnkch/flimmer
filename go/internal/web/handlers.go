@@ -693,6 +693,7 @@ func (s *Server) systemRestart(w http.ResponseWriter, r *http.Request) {
 		w,
 		"success",
 		i18n.T(r.Context(), "Restarting… the page reconnects by itself in a few seconds."),
+		"serverRestarting",
 	)
 }
 
@@ -725,6 +726,7 @@ func (s *Server) upgradeInstall(w http.ResponseWriter, r *http.Request) {
 			w,
 			"success",
 			i18n.T(r.Context(), "Restarting… the page reconnects by itself in a few seconds."),
+			"serverRestarting",
 		)
 	} else {
 		toast(

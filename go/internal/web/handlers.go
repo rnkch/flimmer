@@ -33,14 +33,30 @@ import (
 // --- helpers ----------------------------------------------------------------
 
 func (s *Server) page(r *http.Request, title, active string) views.Page {
-	return views.Page{Title: title, Active: active, JS: s.bundle.JS.Name, CSS: s.bundle.CSS.Name, Now: s.nowPlaying(r.Context()),
-		Name: s.k.DisplayName(r.Context()), NameSet: s.k.Setting(r.Context(), kiosk.SettingDisplayName),
-		Hue: s.k.DisplayHue(r.Context()), Locked: s.k.Locked(r.Context())}
+	return views.Page{
+		Title:  title,
+		Active: active,
+		JS:     s.bundle.JS.Name,
+		CSS:    s.bundle.CSS.Name,
+		Now:    s.nowPlaying(r.Context()),
+		Name: s.k.DisplayName(
+			r.Context(),
+		),
+		NameSet: s.k.Setting(r.Context(), kiosk.SettingDisplayName),
+		Hue:     s.k.DisplayHue(r.Context()),
+		Locked:  s.k.Locked(r.Context()),
+	}
 }
 
 func (s *Server) nowPlaying(ctx context.Context) views.NowPlaying {
 	ps := s.k.PlayerState()
-	n := views.NowPlaying{Paused: ps.Pause, Streaming: ps.Streaming, TimePos: ps.TimePos, Duration: ps.Duration, Title: ps.Title}
+	n := views.NowPlaying{
+		Paused:    ps.Pause,
+		Streaming: ps.Streaming,
+		TimePos:   ps.TimePos,
+		Duration:  ps.Duration,
+		Title:     ps.Title,
+	}
 	if ps.Path == "" {
 		n.Idle = true
 		return n
@@ -165,7 +181,10 @@ func errText(ctx context.Context, err error) string {
 	case errors.Is(err, kiosk.ErrWifiSSID):
 		return i18n.T(ctx, "The network name must be 1 to 32 characters")
 	case errors.Is(err, kiosk.ErrWifiPassword):
-		return i18n.T(ctx, "The Wi-Fi password must be 8 to 63 characters (or empty for an open network)")
+		return i18n.T(
+			ctx,
+			"The Wi-Fi password must be 8 to 63 characters (or empty for an open network)",
+		)
 	case errors.Is(err, kiosk.ErrWifiEnterprise):
 		return i18n.T(ctx, "Networks with user name and password (802.1X) are not supported")
 	case errors.Is(err, kiosk.ErrWifiFallback):
@@ -194,7 +213,16 @@ func (s *Server) playlistPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cur, _ := s.current(r.Context())
-	render(w, r, views.PlaylistPage(s.page(r, "Playlist", "playlist"), list, cur.ID, s.activeJobs(r.Context())))
+	render(
+		w,
+		r,
+		views.PlaylistPage(
+			s.page(r, "Playlist", "playlist"),
+			list,
+			cur.ID,
+			s.activeJobs(r.Context()),
+		),
+	)
 }
 
 func (s *Server) activeJobs(ctx context.Context) int {
@@ -347,7 +375,16 @@ func (s *Server) mediaThumb(w http.ResponseWriter, r *http.Request) {
 func (s *Server) addPage(w http.ResponseWriter, r *http.Request) {
 	jobs, _ := s.k.RecentJobs(r.Context(), jobListLen)
 	free, _, _ := sysinfo.DiskFree(s.k.Config().TmpDir)
-	render(w, r, views.AddPage(s.page(r, "Add", "add"), jobs, free, s.k.SettingInt(r.Context(), kiosk.SettingImageDurationDflt)))
+	render(
+		w,
+		r,
+		views.AddPage(
+			s.page(r, "Add", "add"),
+			jobs,
+			free,
+			s.k.SettingInt(r.Context(), kiosk.SettingImageDurationDflt),
+		),
+	)
 }
 
 // How much the Add page's job list and the System page's log show.
@@ -375,7 +412,16 @@ func (s *Server) upload(w http.ResponseWriter, r *http.Request) {
 	tmpDir := s.k.Config().TmpDir
 	free, _, err := sysinfo.DiskFree(tmpDir)
 	if err == nil && r.ContentLength > 0 && uint64(r.ContentLength)+100<<20 > free {
-		http.Error(w, i18n.T(r.Context(), "Not enough space: %d MB free, upload is %d MB", free>>20, r.ContentLength>>20), http.StatusInsufficientStorage)
+		http.Error(
+			w,
+			i18n.T(
+				r.Context(),
+				"Not enough space: %d MB free, upload is %d MB",
+				free>>20,
+				r.ContentLength>>20,
+			),
+			http.StatusInsufficientStorage,
+		)
 		return
 	}
 	mr, err := r.MultipartReader()
@@ -409,7 +455,11 @@ func (s *Server) upload(w http.ResponseWriter, r *http.Request) {
 		p, err := saveTemp(tmpDir, part)
 		if err != nil {
 			cleanup()
-			http.Error(w, i18n.T(r.Context(), "Saving failed: %s", err.Error()), http.StatusInternalServerError)
+			http.Error(
+				w,
+				i18n.T(r.Context(), "Saving failed: %s", err.Error()),
+				http.StatusInternalServerError,
+			)
 			return
 		}
 		got = append(got, saved{p, filepath.Base(part.FileName())})
@@ -470,7 +520,15 @@ const webQRShowFor = 10 * time.Second
 
 func (s *Server) nameShow(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	render(w, r, views.BrandName(s.k.DisplayName(ctx), s.k.Setting(ctx, kiosk.SettingDisplayName), s.k.DisplayHue(ctx)))
+	render(
+		w,
+		r,
+		views.BrandName(
+			s.k.DisplayName(ctx),
+			s.k.Setting(ctx, kiosk.SettingDisplayName),
+			s.k.DisplayHue(ctx),
+		),
+	)
 }
 
 // nameSave stores the name and, when a color dot was clicked, its color
@@ -542,14 +600,22 @@ func (s *Server) playerAction(w http.ResponseWriter, r *http.Request) {
 		err = s.k.ResumePlaylist(ctx)
 	case "restart":
 		if err = s.k.RestartPlayer(ctx); err == nil {
-			toast(w, "success", i18n.T(ctx, "The player restarts; playback starts from the first entry."))
+			toast(
+				w,
+				"success",
+				i18n.T(ctx, "The player restarts; playback starts from the first entry."),
+			)
 		}
 	case "qr":
 		shown, qerr := s.k.ToggleQR(ctx, webQRShowFor)
 		if qerr == nil {
 			msg := i18n.T(ctx, "QR code hidden")
 			if shown {
-				msg = i18n.T(ctx, "QR code shown on the screen for %d s", int(webQRShowFor.Seconds()))
+				msg = i18n.T(
+					ctx,
+					"QR code shown on the screen for %d s",
+					int(webQRShowFor.Seconds()),
+				)
 			}
 			toast(w, "success", msg)
 		}
@@ -610,8 +676,12 @@ func (s *Server) systemPage(w http.ResponseWriter, r *http.Request) {
 	if s.certs != nil {
 		fp = s.certs.Fingerprint()
 	}
-	render(w, r, views.SystemPage(s.page(r, "System", "system"), si, s.mediaBytes(r.Context()), events,
-		s.k.AccessURL(), fp))
+	render(
+		w,
+		r,
+		views.SystemPage(s.page(r, "System", "system"), si, s.mediaBytes(r.Context()), events,
+			s.k.AccessURL(), fp),
+	)
 }
 
 func (s *Server) systemRestart(w http.ResponseWriter, r *http.Request) {
@@ -619,7 +689,11 @@ func (s *Server) systemRestart(w http.ResponseWriter, r *http.Request) {
 		fail(w, r, err)
 		return
 	}
-	toast(w, "success", i18n.T(r.Context(), "Restarting… the page reconnects by itself in a few seconds."))
+	toast(
+		w,
+		"success",
+		i18n.T(r.Context(), "Restarting… the page reconnects by itself in a few seconds."),
+	)
 }
 
 // upgradeShow is the Flimmerkiste card: what runs and whether a newer release
@@ -647,9 +721,17 @@ func (s *Server) upgradeInstall(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if res.Restarted {
-		toast(w, "success", i18n.T(r.Context(), "Restarting… the page reconnects by itself in a few seconds."))
+		toast(
+			w,
+			"success",
+			i18n.T(r.Context(), "Restarting… the page reconnects by itself in a few seconds."),
+		)
 	} else {
-		toast(w, "warning", i18n.T(r.Context(), "%s is installed. Restart flimmerkiste to run it.", res.To))
+		toast(
+			w,
+			"warning",
+			i18n.T(r.Context(), "%s is installed. Restart flimmerkiste to run it.", res.To),
+		)
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -659,7 +741,14 @@ func (s *Server) systemYtDlp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) systemStats(w http.ResponseWriter, r *http.Request) {
-	render(w, r, views.SystemStats(sysinfo.Read(r.Context(), s.k.Config().MediaDir), s.mediaBytes(r.Context())))
+	render(
+		w,
+		r,
+		views.SystemStats(
+			sysinfo.Read(r.Context(), s.k.Config().MediaDir),
+			s.mediaBytes(r.Context()),
+		),
+	)
 }
 
 func (s *Server) systemLog(w http.ResponseWriter, r *http.Request) {
@@ -712,11 +801,18 @@ func (s *Server) settingsSave(w http.ResponseWriter, r *http.Request) {
 			fail(w, r, userError(i18n.T(ctx, "Invalid values: bitrate 200–20000, duration 1–3600")))
 			return
 		}
-		if !set(map[string]string{kiosk.SettingVideoBitrateK: strconv.Itoa(bitrate), kiosk.SettingImageDurationDflt: strconv.Itoa(dur)}) {
+		if !set(
+			map[string]string{
+				kiosk.SettingVideoBitrateK:     strconv.Itoa(bitrate),
+				kiosk.SettingImageDurationDflt: strconv.Itoa(dur),
+			},
+		) {
 			return
 		}
 	case "display":
-		if !set(map[string]string{kiosk.SettingDebug: strconv.FormatBool(r.FormValue("debug") != "")}) {
+		if !set(
+			map[string]string{kiosk.SettingDebug: strconv.FormatBool(r.FormValue("debug") != "")},
+		) {
 			return
 		}
 	case "help":
@@ -770,7 +866,11 @@ func (s *Server) wifiConnect(w http.ResponseWriter, r *http.Request) {
 		fail(w, r, err)
 		return
 	}
-	toast(w, "neutral", i18n.T(ctx, "Connecting… The QR code with the new address appears on the screen."))
+	toast(
+		w,
+		"neutral",
+		i18n.T(ctx, "Connecting… The QR code with the new address appears on the screen."),
+	)
 }
 
 func (s *Server) wifiDelete(w http.ResponseWriter, r *http.Request) {
@@ -885,7 +985,11 @@ func (s *Server) urlCheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !strings.HasPrefix(u, "http://") && !strings.HasPrefix(u, "https://") {
-		fail(w, r, userError(i18n.T(r.Context(), "Please enter an http(s), rtsp, rtmp, srt or udp link")))
+		fail(
+			w,
+			r,
+			userError(i18n.T(r.Context(), "Please enter an http(s), rtsp, rtmp, srt or udp link")),
+		)
 		return
 	}
 	info, err := s.k.ProbeURL(r.Context(), u)
@@ -930,7 +1034,12 @@ func (s *Server) urlAdd(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.FormValue("mode") == "stream" {
 		dur, _ := strconv.ParseFloat(r.FormValue("duration"), 64)
-		info := kiosk.URLInfo{URL: u, Title: title, Thumbnail: r.FormValue("thumbnail"), Duration: dur}
+		info := kiosk.URLInfo{
+			URL:       u,
+			Title:     title,
+			Thumbnail: r.FormValue("thumbnail"),
+			Duration:  dur,
+		}
 		if _, err := s.k.AddStream(ctx, info, f, title, pos); err != nil {
 			fail(w, r, err)
 			return
@@ -943,7 +1052,14 @@ func (s *Server) urlAdd(w http.ResponseWriter, r *http.Request) {
 		fail(w, r, userError(i18n.T(ctx, "Please check the link first")))
 		return
 	}
-	if _, err := s.k.EnqueueURL(ctx, u, f.Spec, title, kiosk.Caption{Position: pos, Seconds: secs, NoTranscode: r.FormValue("no_transcode") != ""}, f.Size); err != nil {
+	if _, err := s.k.EnqueueURL(
+		ctx,
+		u,
+		f.Spec,
+		title,
+		kiosk.Caption{Position: pos, Seconds: secs, NoTranscode: r.FormValue("no_transcode") != ""},
+		f.Size,
+	); err != nil {
 		fail(w, r, err)
 		return
 	}
@@ -971,7 +1087,11 @@ func (s *Server) mediaFormatDialog(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) mediaFormatSave(w http.ResponseWriter, r *http.Request) {
-	if err := s.k.SetStreamFormat(r.Context(), pathID(r), parseFormat(r.FormValue("format"))); err != nil {
+	if err := s.k.SetStreamFormat(
+		r.Context(),
+		pathID(r),
+		parseFormat(r.FormValue("format")),
+	); err != nil {
 		fail(w, r, err)
 		return
 	}
@@ -984,7 +1104,11 @@ func (s *Server) mediaDownload(w http.ResponseWriter, r *http.Request) {
 		fail(w, r, err)
 		return
 	}
-	toast(w, "success", i18n.T(r.Context(), "Downloading; the copy replaces the stream when it's done"))
+	toast(
+		w,
+		"success",
+		i18n.T(r.Context(), "Downloading; the copy replaces the stream when it's done"),
+	)
 	w.WriteHeader(http.StatusNoContent)
 }
 

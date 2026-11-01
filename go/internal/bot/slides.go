@@ -37,17 +37,26 @@ func (bt *Bot) showSlides(ctx context.Context, chatID int64, msgID int, page int
 		id := strconv.FormatInt(m.ID, 10)
 		icon := map[string]string{"image": "🖼", "video": "🎞", "stream": "📡"}[m.Kind]
 		rows = append(rows, []models.InlineKeyboardButton{
-			{Text: fmt.Sprintf("%d. %s %s", m.Position, icon, short(m.Title, 14)), CallbackData: "slide:" + id},
+			{
+				Text:         fmt.Sprintf("%d. %s %s", m.Position, icon, short(m.Title, 14)),
+				CallbackData: "slide:" + id,
+			},
 			{Text: "Up", CallbackData: "act:up:" + id},
 			{Text: "Down", CallbackData: "act:down:" + id},
 		})
 	}
 	var nav []models.InlineKeyboardButton
 	if page > 1 {
-		nav = append(nav, models.InlineKeyboardButton{Text: "Prev", CallbackData: fmt.Sprintf("page:%d", page-1)})
+		nav = append(
+			nav,
+			models.InlineKeyboardButton{Text: "Prev", CallbackData: fmt.Sprintf("page:%d", page-1)},
+		)
 	}
 	if page < pages {
-		nav = append(nav, models.InlineKeyboardButton{Text: "Next", CallbackData: fmt.Sprintf("page:%d", page+1)})
+		nav = append(
+			nav,
+			models.InlineKeyboardButton{Text: "Next", CallbackData: fmt.Sprintf("page:%d", page+1)},
+		)
 	}
 	if nav != nil {
 		rows = append(rows, nav)
@@ -56,7 +65,13 @@ func (bt *Bot) showSlides(ctx context.Context, chatID int64, msgID int, page int
 	bt.show(ctx, chatID, msgID, text, &models.InlineKeyboardMarkup{InlineKeyboard: rows})
 }
 
-func (bt *Bot) show(ctx context.Context, chatID int64, msgID int, text string, markup models.ReplyMarkup) {
+func (bt *Bot) show(
+	ctx context.Context,
+	chatID int64,
+	msgID int,
+	text string,
+	markup models.ReplyMarkup,
+) {
 	if msgID != 0 {
 		bt.edit(ctx, chatID, msgID, text, markup, true)
 	} else {
@@ -78,7 +93,10 @@ func (bt *Bot) onCallback(ctx context.Context, q *models.CallbackQuery) {
 		return
 	}
 	answer := func(text string, alert bool) {
-		bt.b.AnswerCallbackQuery(ctx, &tg.AnswerCallbackQueryParams{CallbackQueryID: q.ID, Text: text, ShowAlert: alert})
+		bt.b.AnswerCallbackQuery(
+			ctx,
+			&tg.AnswerCallbackQueryParams{CallbackQueryID: q.ID, Text: text, ShowAlert: alert},
+		)
 	}
 	parts := strings.Split(q.Data, ":")
 	chatID, msgID := msg.Chat.ID, msg.ID
@@ -160,13 +178,19 @@ func (bt *Bot) showActions(ctx context.Context, chatID int64, msgID int, id int6
 	sid := strconv.FormatInt(id, 10)
 	rows := [][]models.InlineKeyboardButton{
 		{{Text: "Rename", CallbackData: "act:rename:" + sid}},
-		{{Text: "Delete", CallbackData: "act:delete:" + sid}, {Text: "Position", CallbackData: "act:position:" + sid}},
+		{
+			{Text: "Delete", CallbackData: "act:delete:" + sid},
+			{Text: "Position", CallbackData: "act:position:" + sid},
+		},
 		{{Text: "Back to slides", CallbackData: "act:back:" + sid}},
 	}
 	info := fmt.Sprintf("✏️ \"%s\"\nPosition %d · ", m.Title, m.Position)
 	switch m.Kind {
 	case "image":
-		rows[0] = append(rows[0], models.InlineKeyboardButton{Text: "Duration", CallbackData: "act:duration:" + sid})
+		rows[0] = append(
+			rows[0],
+			models.InlineKeyboardButton{Text: "Duration", CallbackData: "act:duration:" + sid},
+		)
 		info += fmt.Sprintf("Bild, %ds", m.ImageDurationS)
 	case "stream":
 		info += "Stream, " + m.URL
@@ -263,7 +287,12 @@ func (bt *Bot) statusText(ctx context.Context) string {
 		fmt.Fprintf(&b, "⏳ Warteschlange: %d\n", len(jobs))
 	}
 	if si.DiskTotal > 0 {
-		fmt.Fprintf(&b, "💾 Frei: %.1f GB von %.1f GB\n", float64(si.DiskFree)/1e9, float64(si.DiskTotal)/1e9)
+		fmt.Fprintf(
+			&b,
+			"💾 Frei: %.1f GB von %.1f GB\n",
+			float64(si.DiskFree)/1e9,
+			float64(si.DiskTotal)/1e9,
+		)
 	}
 	if si.TempC > 0 {
 		fmt.Fprintf(&b, "🌡 CPU: %.0f °C\n", si.TempC)

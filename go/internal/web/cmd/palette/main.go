@@ -63,7 +63,9 @@ func readWA() map[string]map[string]waTint {
 		log.Fatal(err, " (run from rpi/go)")
 	}
 	defer f.Close()
-	re := regexp.MustCompile(`--wa-color-([a-z]+)-(\d\d): #[0-9a-f]{6} /\* oklch\(([\d.]+)% ([\d.]+) ([\d.]+)\)`)
+	re := regexp.MustCompile(
+		`--wa-color-([a-z]+)-(\d\d): #[0-9a-f]{6} /\* oklch\(([\d.]+)% ([\d.]+) ([\d.]+)\)`,
+	)
 	res := map[string]map[string]waTint{}
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
@@ -133,7 +135,12 @@ func around(as []anchor, L float64) (anchor, anchor, float64) {
 	return last, last, 0
 }
 
-func writeHue(css, report *strings.Builder, waHue, tn string, extra []string, wa map[string]waTint) {
+func writeHue(
+	css, report *strings.Builder,
+	waHue, tn string,
+	extra []string,
+	wa map[string]waTint,
+) {
 	n, d := parseHex(night[tn]), parseHex(day[tn])
 	cands := []anchor{
 		{color: n, lch: n.lch(), label: "night." + tn},
@@ -188,7 +195,15 @@ func writeHue(css, report *strings.Builder, waHue, tn string, extra []string, wa
 		prevL = l.L
 		writeTint(css, waHue, t, c, comment)
 	}
-	fmt.Fprintf(css, "    --wa-color-%s: var(--wa-color-%s-%s);\n    --wa-color-%s-key: %s;\n\n", waHue, waHue, key, waHue, strings.TrimLeft(key, "0"))
+	fmt.Fprintf(
+		css,
+		"    --wa-color-%s: var(--wa-color-%s-%s);\n    --wa-color-%s-key: %s;\n\n",
+		waHue,
+		waHue,
+		key,
+		waHue,
+		strings.TrimLeft(key, "0"),
+	)
 }
 
 func writeGray(css, report *strings.Builder, wa map[string]waTint) {
@@ -231,7 +246,12 @@ func writeGray(css, report *strings.Builder, wa map[string]waTint) {
 		writeTint(css, "gray", t, c, comment)
 	}
 	key := "40"
-	fmt.Fprintf(css, "    --wa-color-gray: var(--wa-color-gray-%s);\n    --wa-color-gray-key: %s;\n", key, key)
+	fmt.Fprintf(
+		css,
+		"    --wa-color-gray: var(--wa-color-gray-%s);\n    --wa-color-gray-key: %s;\n",
+		key,
+		key,
+	)
 }
 
 // generated keeps every tint for the contrast report.
@@ -278,14 +298,32 @@ func contrastReport(report *strings.Builder) {
 		case c < 4.5:
 			mark = "large/UI only"
 		}
-		fmt.Fprintf(report, "  %-5s %-24s %-9s on %-9s %5.2f  %s\n", p.scheme, p.role, p.fg, p.bg, c, mark)
+		fmt.Fprintf(
+			report,
+			"  %-5s %-24s %-9s on %-9s %5.2f  %s\n",
+			p.scheme,
+			p.role,
+			p.fg,
+			p.bg,
+			c,
+			mark,
+		)
 	}
 }
 
 func writeTint(css *strings.Builder, hue, t string, c rgb, comment string) {
 	generated[hue+"-"+t] = c
 	l := c.lch()
-	fmt.Fprintf(css, "    --wa-color-%s-%s: %s /* oklch(%.3f%% %.4f %.1f)", hue, t, c.hex(), l.L*100, l.C, l.H)
+	fmt.Fprintf(
+		css,
+		"    --wa-color-%s-%s: %s /* oklch(%.3f%% %.4f %.1f)",
+		hue,
+		t,
+		c.hex(),
+		l.L*100,
+		l.C,
+		l.H,
+	)
 	if comment != "" {
 		fmt.Fprintf(css, " %s", comment)
 	}

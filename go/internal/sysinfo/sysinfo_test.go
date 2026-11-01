@@ -46,7 +46,12 @@ func TestThrottleQuestions(t *testing.T) {
 		{"", false, false, false, false},       // not a Pi
 	} {
 		in := Info{Throttled: c.raw}
-		got := [4]bool{in.UnderVoltageNow(), in.UnderVoltageEarlier(), in.SlowedNow(), in.WarmEarlier()}
+		got := [4]bool{
+			in.UnderVoltageNow(),
+			in.UnderVoltageEarlier(),
+			in.SlowedNow(),
+			in.WarmEarlier(),
+		}
 		if want := [4]bool{c.uvNow, c.uvEarlier, c.slowNow, c.warmEarly}; got != want {
 			t.Errorf("%s: got %v, want %v", c.raw, got, want)
 		}

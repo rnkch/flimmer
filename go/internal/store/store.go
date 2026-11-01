@@ -24,7 +24,10 @@ type Store struct {
 
 // Open opens (and if needed creates) the database at path.
 func Open(ctx context.Context, path string) (*Store, error) {
-	dsn := fmt.Sprintf("file:%s?_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)", path)
+	dsn := fmt.Sprintf(
+		"file:%s?_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)",
+		path,
+	)
 	conn, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, err

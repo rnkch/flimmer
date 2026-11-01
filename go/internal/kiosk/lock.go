@@ -17,7 +17,11 @@ const SettingLocked = "locked"
 
 var ErrLocked = errors.New("the kiosk is locked")
 
-func (s *Service) Locked(ctx context.Context) bool { return s.Setting(ctx, SettingLocked) == "true" }
+func (s *Service) Locked(
+	ctx context.Context,
+) bool {
+	return s.Setting(ctx, SettingLocked) == "true"
+}
 
 // SetLocked locks or unlocks the kiosk. Config.LockFile mirrors the state for
 // deploy.sh, which refuses to restart a locked kiosk.

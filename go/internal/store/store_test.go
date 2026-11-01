@@ -55,10 +55,14 @@ INSERT INTO jobs (source, orig_name, state, media_id) VALUES ('telegram', 'alt.m
 	if v != schemaVersion {
 		t.Fatalf("user_version = %d", v)
 	}
-	if _, err := st.DB.Exec(`INSERT INTO jobs (source, url, format) VALUES ('url', 'https://x', '18')`); err != nil {
+	if _, err := st.DB.Exec(
+		`INSERT INTO jobs (source, url, format) VALUES ('url', 'https://x', '18')`,
+	); err != nil {
 		t.Fatalf("url job after migration: %v", err)
 	}
-	if _, err := st.DB.Exec(`INSERT INTO media (filename, title, kind, position, url) VALUES ('stream-x', 'S', 'stream', 2, 'https://x')`); err != nil {
+	if _, err := st.DB.Exec(
+		`INSERT INTO media (filename, title, kind, position, url) VALUES ('stream-x', 'S', 'stream', 2, 'https://x')`,
+	); err != nil {
 		t.Fatalf("stream entry after migration: %v", err)
 	}
 	if m, err := st.GetMedia(ctx, 1); err != nil || m.Filename != "a.jpg" {

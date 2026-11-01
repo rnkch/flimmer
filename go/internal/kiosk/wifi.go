@@ -24,10 +24,14 @@ import (
 const fallbackWifiName = "flimmerkiste-fallback"
 
 var (
-	ErrWifiUnavailable  = errors.New("Wi-Fi can't be managed on this device")
-	ErrWifiSSID         = errors.New("the network name must be 1 to 32 characters")
-	ErrWifiPassword     = errors.New("the Wi-Fi password must be 8 to 63 characters (or empty for an open network)")
-	ErrWifiEnterprise   = errors.New("networks with user name and password (802.1X) are not supported")
+	ErrWifiUnavailable = errors.New("Wi-Fi can't be managed on this device")
+	ErrWifiSSID        = errors.New("the network name must be 1 to 32 characters")
+	ErrWifiPassword    = errors.New(
+		"the Wi-Fi password must be 8 to 63 characters (or empty for an open network)",
+	)
+	ErrWifiEnterprise = errors.New(
+		"networks with user name and password (802.1X) are not supported",
+	)
 	ErrWifiFallback     = errors.New("the fallback network can't be changed here")
 	ErrWifiActive       = errors.New("the Pi is connected through this network right now")
 	ErrWifiNotSaved     = errors.New("this network is not saved")
@@ -56,7 +60,10 @@ func (s *Service) nmcli(ctx context.Context, args ...string) (string, error) {
 	}
 	ctx, cancel := context.WithTimeout(ctx, 45*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, s.cfg.Nmcli[0], append(slices.Clone(s.cfg.Nmcli[1:]), args...)...)
+	cmd := exec.CommandContext(
+		ctx,
+		s.cfg.Nmcli[0],
+		append(slices.Clone(s.cfg.Nmcli[1:]), args...)...)
 	out, err := cmd.Output()
 	if err != nil {
 		var ee *exec.ExitError
@@ -123,7 +130,17 @@ func (s *Service) WifiNetworks(ctx context.Context, rescan bool) ([]WifiNetwork,
 	if rescan {
 		scan = "yes"
 	}
-	out, err = s.nmcli(ctx, "-t", "-f", "SSID,SIGNAL,SECURITY", "device", "wifi", "list", "--rescan", scan)
+	out, err = s.nmcli(
+		ctx,
+		"-t",
+		"-f",
+		"SSID,SIGNAL,SECURITY",
+		"device",
+		"wifi",
+		"list",
+		"--rescan",
+		scan,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +165,11 @@ func (s *Service) WifiNetworks(ctx context.Context, rescan bool) ([]WifiNetwork,
 		list = append(list, n)
 	}
 	slices.SortStableFunc(list, func(a, b WifiNetwork) int {
-		return cmp.Or(boolCmp(b.Active, a.Active), boolCmp(a.Fallback, b.Fallback), cmp.Compare(b.Signal, a.Signal))
+		return cmp.Or(
+			boolCmp(b.Active, a.Active),
+			boolCmp(a.Fallback, b.Fallback),
+			cmp.Compare(b.Signal, a.Signal),
+		)
 	})
 	var others []WifiNetwork
 	for _, n := range inRange {
@@ -223,7 +244,9 @@ func (s *Service) SaveWifi(ctx context.Context, ssid, password string) error {
 		if existing.Fallback {
 			return ErrWifiFallback
 		}
-		_, err = s.nmcli(ctx, append([]string{"connection", "modify", "id", existing.Name}, sec...)...)
+		_, err = s.nmcli(
+			ctx,
+			append([]string{"connection", "modify", "id", existing.Name}, sec...)...)
 	} else {
 		args := []string{"connection", "add", "type", "wifi", "con-name", ssid, "ssid", ssid,
 			"connection.autoconnect", "yes"}
@@ -242,7 +265,8 @@ func (s *Service) SaveWifi(ctx context.Context, ssid, password string) error {
 // keyMgmt picks WPA3 (SAE) only for networks that offer nothing else; mixed
 // WPA2/WPA3 networks get WPA2-PSK, which every Pi supports.
 func keyMgmt(security string) string {
-	if strings.Contains(security, "WPA3") && !strings.Contains(security, "WPA2") && !strings.Contains(security, "WPA1") {
+	if strings.Contains(security, "WPA3") && !strings.Contains(security, "WPA2") &&
+		!strings.Contains(security, "WPA1") {
 		return "sae"
 	}
 	return "wpa-psk"
@@ -342,9 +366,25 @@ func (s *Service) EnsureFallbackWifi(ctx context.Context) {
 			return
 		}
 	}
-	_, err = s.nmcli(ctx, "connection", "add", "type", "wifi", "con-name", fallbackWifiName, "ssid", ssid,
-		"connection.autoconnect", "yes", "connection.autoconnect-priority", "-10",
-		"wifi-sec.key-mgmt", "wpa-psk", "wifi-sec.psk", password)
+	_, err = s.nmcli(
+		ctx,
+		"connection",
+		"add",
+		"type",
+		"wifi",
+		"con-name",
+		fallbackWifiName,
+		"ssid",
+		ssid,
+		"connection.autoconnect",
+		"yes",
+		"connection.autoconnect-priority",
+		"-10",
+		"wifi-sec.key-mgmt",
+		"wpa-psk",
+		"wifi-sec.psk",
+		password,
+	)
 	if err != nil {
 		s.Logf(ctx, slog.LevelWarn, "fallback Wi-Fi not saved", "err", err)
 		return

@@ -52,7 +52,11 @@ func ParseCaption(s string) Caption {
 }
 
 // EnqueueTelegram queues a Telegram file; the worker downloads it in order.
-func (s *Service) EnqueueTelegram(ctx context.Context, fileID, origName, caption string, chatID int64) (db.Job, error) {
+func (s *Service) EnqueueTelegram(
+	ctx context.Context,
+	fileID, origName, caption string,
+	chatID int64,
+) (db.Job, error) {
 	c := ParseCaption(caption)
 	return s.enqueue(ctx, db.InsertJobParams{
 		Source: "telegram", OrigName: origName, Title: c.Title,
@@ -62,10 +66,21 @@ func (s *Service) EnqueueTelegram(ctx context.Context, fileID, origName, caption
 }
 
 // EnqueueFile queues a file that is already on disk (web upload).
-func (s *Service) EnqueueFile(ctx context.Context, path, origName string, c Caption) (db.Job, error) {
+func (s *Service) EnqueueFile(
+	ctx context.Context,
+	path, origName string,
+	c Caption,
+) (db.Job, error) {
 	return s.enqueue(ctx, db.InsertJobParams{
-		Source: "web", SrcPath: path, OrigName: origName, Title: c.Title,
-		WantPosition: int64(c.Position), ImageDurationS: int64(c.Seconds), NoTranscode: boolInt(c.NoTranscode),
+		Source:   "web",
+		SrcPath:  path,
+		OrigName: origName,
+		Title:    c.Title,
+		WantPosition: int64(
+			c.Position,
+		),
+		ImageDurationS: int64(c.Seconds),
+		NoTranscode:    boolInt(c.NoTranscode),
 	})
 }
 
@@ -153,8 +168,14 @@ func (s *Service) cleanTmp(ctx context.Context) {
 		name := e.Name()
 		info, err := e.Info()
 		if err != nil || e.IsDir() || keep[name] || time.Since(info.ModTime()) < time.Minute ||
-			!slices.ContainsFunc(tmpPrefixes, func(p string) bool { return strings.HasPrefix(name, p) }) ||
-			slices.ContainsFunc(jobPrefixes, func(p string) bool { return strings.HasPrefix(name, p) }) {
+			!slices.ContainsFunc(
+				tmpPrefixes,
+				func(p string) bool { return strings.HasPrefix(name, p) },
+			) ||
+			slices.ContainsFunc(
+				jobPrefixes,
+				func(p string) bool { return strings.HasPrefix(name, p) },
+			) {
 			continue
 		}
 		if os.Remove(filepath.Join(s.cfg.TmpDir, name)) == nil {
@@ -167,7 +188,11 @@ func (s *Service) cleanTmp(ctx context.Context) {
 	}
 }
 
-func (s *Service) ActiveJobs(ctx context.Context) ([]db.Job, error) { return s.st.ListActiveJobs(ctx) }
+func (s *Service) ActiveJobs(
+	ctx context.Context,
+) ([]db.Job, error) {
+	return s.st.ListActiveJobs(ctx)
+}
 
 func (s *Service) RecentJobs(ctx context.Context, n int) ([]db.Job, error) {
 	return s.st.ListRecentJobs(ctx, int64(n))
@@ -175,7 +200,10 @@ func (s *Service) RecentJobs(ctx context.Context, n int) ([]db.Job, error) {
 
 // SetJobProgressMessage records the Telegram message the bot edits with progress.
 func (s *Service) SetJobProgressMessage(ctx context.Context, jobID, chatID int64, msgID int) error {
-	return s.st.SetJobProgressMessage(ctx, db.SetJobProgressMessageParams{TgChatID: chatID, TgProgressMsgID: int64(msgID), ID: jobID})
+	return s.st.SetJobProgressMessage(
+		ctx,
+		db.SetJobProgressMessageParams{TgChatID: chatID, TgProgressMsgID: int64(msgID), ID: jobID},
+	)
 }
 
 // RunWorker processes queued jobs one at a time, oldest first, until ctx ends.
@@ -235,7 +263,10 @@ func (s *Service) runJob(ctx context.Context, j db.Job) {
 		s.st.SetJobFailed(ctx, db.SetJobFailedParams{Error: err.Error(), ID: j.ID})
 		s.Logf(ctx, slog.LevelError, "upload failed", "job", j.ID, "file", j.OrigName, "err", err)
 	} else {
-		s.st.SetJobDone(ctx, db.SetJobDoneParams{MediaID: sql.NullInt64{Int64: m.ID, Valid: true}, ID: j.ID})
+		s.st.SetJobDone(
+			ctx,
+			db.SetJobDoneParams{MediaID: sql.NullInt64{Int64: m.ID, Valid: true}, ID: j.ID},
+		)
 		s.replaceStream(ctx, j)
 		s.Logf(ctx, slog.LevelInfo, "added", "title", m.Title, "position", m.Position)
 	}
@@ -253,12 +284,18 @@ func (s *Service) ingest(ctx context.Context, j db.Job) (db.Media, error) {
 		if s.Fetch == nil {
 			return db.Media{}, errors.New("telegram download not available")
 		}
-		src = filepath.Join(s.cfg.TmpDir, fmt.Sprintf("tg-%d%s", j.ID, strings.ToLower(filepath.Ext(j.OrigName))))
+		src = filepath.Join(
+			s.cfg.TmpDir,
+			fmt.Sprintf("tg-%d%s", j.ID, strings.ToLower(filepath.Ext(j.OrigName))),
+		)
 		if err := s.Fetch(ctx, j.TgFileID, src); err != nil {
 			os.Remove(src)
 			return db.Media{}, fmt.Errorf("download: %w", err)
 		}
-		s.st.SetJobSrcPath(ctx, db.SetJobSrcPathParams{SrcPath: src, OrigName: j.OrigName, ID: j.ID})
+		s.st.SetJobSrcPath(
+			ctx,
+			db.SetJobSrcPathParams{SrcPath: src, OrigName: j.OrigName, ID: j.ID},
+		)
 	}
 	if j.Source == "url" && (src == "" || !exists(src)) {
 		var err error
@@ -267,7 +304,10 @@ func (s *Service) ingest(ctx context.Context, j db.Job) (db.Media, error) {
 		}
 		// Keep the title as name; the extension decides image vs video handling.
 		j.OrigName = j.Title + filepath.Ext(src)
-		s.st.SetJobSrcPath(ctx, db.SetJobSrcPathParams{SrcPath: src, OrigName: j.OrigName, ID: j.ID})
+		s.st.SetJobSrcPath(
+			ctx,
+			db.SetJobSrcPathParams{SrcPath: src, OrigName: j.OrigName, ID: j.ID},
+		)
 	}
 	defer func() {
 		// Interrupted by a shutdown (deploy, restart): keep the source, the
@@ -299,7 +339,11 @@ func (s *Service) ingest(ctx context.Context, j db.Job) (db.Media, error) {
 		need += uint64(fileSize(src)) * 2
 	}
 	if free, _, err := sysinfo.DiskFree(s.cfg.MediaDir); err == nil && free < need {
-		return db.Media{}, fmt.Errorf("not enough disk space: %d MB free, about %d MB needed", free>>20, need>>20)
+		return db.Media{}, fmt.Errorf(
+			"not enough disk space: %d MB free, about %d MB needed",
+			free>>20,
+			need>>20,
+		)
 	}
 
 	var name string
@@ -373,7 +417,8 @@ func (s *Service) addMedia(ctx context.Context, p db.InsertMediaParams, pos int)
 func (s *Service) ingestImage(ctx context.Context, src, ext string) (string, error) {
 	if ext == ".heic" || ext == ".heif" {
 		name := uniqueName(s.cfg.MediaDir, "image", ".jpg")
-		out, err := exec.CommandContext(ctx, s.cfg.HeifConvert, src, filepath.Join(s.cfg.MediaDir, name)).CombinedOutput()
+		out, err := exec.CommandContext(ctx, s.cfg.HeifConvert, src, filepath.Join(s.cfg.MediaDir, name)).
+			CombinedOutput()
 		if err != nil {
 			return "", fmt.Errorf("heif-convert: %v: %s", err, lastLine(out))
 		}
@@ -439,7 +484,14 @@ func playsAsIs(hdmi bool, in probeInfo) bool {
 // said "don't convert"; mpv plays any container and codec ffmpeg reads, and a
 // rename on the same disk is instant), or re-encodes it to H.264 at the
 // output size.
-func (s *Service) ingestVideo(ctx context.Context, jobID int64, src, ext string, info probeInfo, bitrateK int, asIs bool) (string, error) {
+func (s *Service) ingestVideo(
+	ctx context.Context,
+	jobID int64,
+	src, ext string,
+	info probeInfo,
+	bitrateK int,
+	asIs bool,
+) (string, error) {
 	if asIs {
 		if !plainExt.MatchString(ext) {
 			ext = ".mkv" // a name only: mpv detects the format from the content
@@ -455,7 +507,18 @@ func (s *Service) ingestVideo(ctx context.Context, jobID int64, src, ext string,
 	defer os.Remove(tmp)
 
 	b := fmt.Sprintf("%dk", bitrateK)
-	args := []string{"-n", "15", s.cfg.FFmpeg, "-y", "-nostdin", "-nostats", "-progress", "pipe:1", "-i", src}
+	args := []string{
+		"-n",
+		"15",
+		s.cfg.FFmpeg,
+		"-y",
+		"-nostdin",
+		"-nostats",
+		"-progress",
+		"pipe:1",
+		"-i",
+		src,
+	}
 	if needFilter {
 		args = append(args, "-vf", vf)
 	}
@@ -508,7 +571,8 @@ type probeInfo struct {
 }
 
 func probe(ctx context.Context, ffprobe, path string) (probeInfo, error) {
-	out, err := exec.CommandContext(ctx, ffprobe, "-v", "error", "-print_format", "json", "-show_format", "-show_streams", path).Output()
+	out, err := exec.CommandContext(ctx, ffprobe, "-v", "error", "-print_format", "json", "-show_format", "-show_streams", path).
+		Output()
 	if err != nil {
 		return probeInfo{}, fmt.Errorf("ffprobe: %w", err)
 	}
@@ -562,7 +626,8 @@ func (in probeInfo) kind(ext string) string {
 	if !in.HasVideo {
 		return ""
 	}
-	if in.Format == "gif" || strings.Contains(in.Format, "image2") || strings.HasSuffix(in.Format, "_pipe") {
+	if in.Format == "gif" || strings.Contains(in.Format, "image2") ||
+		strings.HasSuffix(in.Format, "_pipe") {
 		return "image"
 	}
 	return "video"

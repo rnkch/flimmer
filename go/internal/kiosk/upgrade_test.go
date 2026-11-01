@@ -58,7 +58,8 @@ func upgradeEnv(t *testing.T, rel *fakeRelease) (s *Service, exe string) {
 			if !rel.noAsset {
 				assets = append(assets, asset{platformAsset(), "http://" + r.Host + "/dl/binary"})
 			}
-			json.NewEncoder(w).Encode(map[string]any{"tag_name": rel.tag, "html_url": "https://example.test/r", "assets": assets})
+			json.NewEncoder(w).
+				Encode(map[string]any{"tag_name": rel.tag, "html_url": "https://example.test/r", "assets": assets})
 		case "/dl/binary":
 			fmt.Fprint(w, rel.binary)
 		case "/dl/checksums":
@@ -106,7 +107,9 @@ func TestUpgradeInstalls(t *testing.T) {
 	ctx := context.Background()
 
 	info, err := s.CheckUpgrade(ctx, true)
-	if err != nil || !info.Newer || !info.CanInstall || info.Latest != "v0.3.0" || info.Current != "v0.2.0" || !info.Release {
+	if err != nil || !info.Newer || !info.CanInstall || info.Latest != "v0.3.0" ||
+		info.Current != "v0.2.0" ||
+		!info.Release {
 		t.Fatalf("check: %+v, %v", info, err)
 	}
 	res, err := s.Upgrade(ctx)

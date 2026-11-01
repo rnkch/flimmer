@@ -272,8 +272,16 @@ var messages = func() catalog.Catalog {
 		b.SetString(language.English, en, en)
 	}
 	// Counted phrases need plural forms.
-	b.Set(language.English, "%d entries", plural.Selectf(1, "%d", "=1", "%d entry", "other", "%d entries"))
-	b.Set(language.German, "%d entries", plural.Selectf(1, "%d", "=1", "%d Eintrag", "other", "%d Einträge"))
+	b.Set(
+		language.English,
+		"%d entries",
+		plural.Selectf(1, "%d", "=1", "%d entry", "other", "%d entries"),
+	)
+	b.Set(
+		language.German,
+		"%d entries",
+		plural.Selectf(1, "%d", "=1", "%d Eintrag", "other", "%d Einträge"),
+	)
 	b.Set(language.English, "%d processing", plural.Selectf(1, "%d", "other", "%d processing"))
 	b.Set(language.German, "%d processing", plural.Selectf(1, "%d", "other", "%d in Verarbeitung"))
 	return b

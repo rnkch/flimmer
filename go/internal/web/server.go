@@ -45,7 +45,15 @@ func New(k *kiosk.Service, certs *access.Certs) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	slog.Info("web assets bundled", "js", res.JS.Name, "css", res.CSS.Name, "took", time.Since(start).Round(time.Millisecond))
+	slog.Info(
+		"web assets bundled",
+		"js",
+		res.JS.Name,
+		"css",
+		res.CSS.Name,
+		"took",
+		time.Since(start).Round(time.Millisecond),
+	)
 	icons, _ := fs.Sub(files, "vendor/icons")
 	return &Server{k: k, certs: certs, bundle: res, icons: icons}, nil
 }
@@ -60,7 +68,10 @@ func (s *Server) Handler() http.Handler {
 
 	app := http.NewServeMux()
 	app.HandleFunc("POST /logout", s.logout)
-	app.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/playlist", http.StatusFound) })
+	app.HandleFunc(
+		"GET /{$}",
+		func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/playlist", http.StatusFound) },
+	)
 	app.HandleFunc("GET /events", s.events)
 
 	app.HandleFunc("GET /playlist", s.playlistPage)
@@ -81,14 +92,20 @@ func (s *Server) Handler() http.Handler {
 	app.HandleFunc("POST /media/{id}/download", s.mediaDownload)
 
 	app.HandleFunc("GET /add", s.addPage)
-	app.HandleFunc("GET /upload", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/add", http.StatusMovedPermanently) })
+	app.HandleFunc(
+		"GET /upload",
+		func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/add", http.StatusMovedPermanently) },
+	)
 	app.HandleFunc("POST /upload", s.upload)
 	app.HandleFunc("GET /jobs", s.jobs)
 	app.HandleFunc("POST /jobs/{id}/cancel", s.jobCancel)
 	app.HandleFunc("GET /url/check", s.urlCheck)
 	app.HandleFunc("POST /url/add", s.urlAdd)
 
-	app.Handle("GET /player", http.RedirectHandler("/playlist", http.StatusMovedPermanently)) // merged into the playlist page
+	app.Handle(
+		"GET /player",
+		http.RedirectHandler("/playlist", http.StatusMovedPermanently),
+	) // merged into the playlist page
 	app.HandleFunc("GET /player/card", s.playerCard)
 	app.HandleFunc("POST /player/stream", s.playerStream)
 	app.HandleFunc("POST /name", s.nameSave)
@@ -138,7 +155,11 @@ func (s *Server) requireLogin(next http.Handler) http.Handler {
 }
 
 func (s *Server) loginPage(w http.ResponseWriter, r *http.Request) {
-	render(w, r, views.Login(s.bundle.CSS.Name, s.bundle.JS.Name, "", !s.k.HasWebPassword(r.Context())))
+	render(
+		w,
+		r,
+		views.Login(s.bundle.CSS.Name, s.bundle.JS.Name, "", !s.k.HasWebPassword(r.Context())),
+	)
 }
 
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
@@ -155,7 +176,8 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		s.loginMu.Unlock()
 		s.k.Logf(r.Context(), slog.LevelWarn, "web login failed", "remote", r.RemoteAddr)
 		w.WriteHeader(http.StatusUnauthorized)
-		views.Login(s.bundle.CSS.Name, s.bundle.JS.Name, "Wrong password.", errors.Is(err, kiosk.ErrNoWebPassword)).Render(r.Context(), w)
+		views.Login(s.bundle.CSS.Name, s.bundle.JS.Name, "Wrong password.", errors.Is(err, kiosk.ErrNoWebPassword)).
+			Render(r.Context(), w)
 		return
 	}
 	s.loginMu.Lock()
@@ -254,7 +276,10 @@ func (s *Server) serveTLS(ctx context.Context, srv *http.Server, addr string) {
 		slog.Error("web listen", "addr", addr, "err", err)
 		return
 	}
-	tlsLn := tls.NewListener(ln, &tls.Config{GetCertificate: s.certs.GetCertificate, MinVersion: tls.VersionTLS12})
+	tlsLn := tls.NewListener(
+		ln,
+		&tls.Config{GetCertificate: s.certs.GetCertificate, MinVersion: tls.VersionTLS12},
+	)
 	slog.Info("web listening (https)", "addr", addr, "url", s.k.AccessURL())
 	if err := srv.Serve(tlsLn); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		slog.Error("web serve", "addr", addr, "err", err)

@@ -54,7 +54,11 @@ type state struct {
 
 // With stores the language (and its printer) in ctx.
 func With(ctx context.Context, tag language.Tag) context.Context {
-	return context.WithValue(ctx, ctxKey{}, state{tag, message.NewPrinter(tag, message.Catalog(messages))})
+	return context.WithValue(
+		ctx,
+		ctxKey{},
+		state{tag, message.NewPrinter(tag, message.Catalog(messages))},
+	)
 }
 
 func get(ctx context.Context) state {

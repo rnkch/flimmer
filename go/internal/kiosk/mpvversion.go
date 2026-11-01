@@ -46,6 +46,12 @@ func (s *Service) checkMpvVersion(ctx context.Context) {
 	}
 	slog.Info("mpv", "version", v)
 	if mpvTooOld(v) {
-		s.Logf(ctx, slog.LevelError, "mpv is too old: playlist changes need mpv 0.38 or newer", "found", v)
+		s.Logf(
+			ctx,
+			slog.LevelError,
+			"mpv is too old: playlist changes need mpv 0.38 or newer",
+			"found",
+			v,
+		)
 	}
 }

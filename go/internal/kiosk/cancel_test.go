@@ -11,7 +11,12 @@ import (
 	"time"
 )
 
-func waitJob(t *testing.T, s *Service, id int64, until func(state, phase string, progress int64) bool) {
+func waitJob(
+	t *testing.T,
+	s *Service,
+	id int64,
+	until func(state, phase string, progress int64) bool,
+) {
 	t.Helper()
 	deadline := time.Now().Add(60 * time.Second)
 	for time.Now().Before(deadline) {
@@ -56,14 +61,21 @@ func TestCancelRunningJob(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	vid := filepath.Join(s.cfg.TmpDir, "web-long.avi")
-	exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=s=640x480:d=120:r=25", "-c:v", "mpeg4", vid).Run()
+	exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=s=640x480:d=120:r=25", "-c:v", "mpeg4", vid).
+		Run()
 	img := filepath.Join(s.cfg.TmpDir, "web-next.jpg")
-	exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=blue:s=64x48", "-frames:v", "1", img).Run()
+	exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=blue:s=64x48", "-frames:v", "1", img).
+		Run()
 	long, _ := s.EnqueueFile(ctx, vid, "long.avi", Caption{})
 	next, _ := s.EnqueueFile(ctx, img, "next.jpg", Caption{})
 	go s.RunWorker(ctx)
 
-	waitJob(t, s, long.ID, func(state, phase string, p int64) bool { return phase == "transcode" && p > 0 })
+	waitJob(
+		t,
+		s,
+		long.ID,
+		func(state, phase string, p int64) bool { return phase == "transcode" && p > 0 },
+	)
 	if err := s.CancelJob(ctx, long.ID); err != nil {
 		t.Fatal(err)
 	}

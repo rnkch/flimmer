@@ -37,34 +37,48 @@ const ns = "vfs"
 
 func plugin(fsys fs.FS) api.Plugin {
 	return api.Plugin{Name: "vfs", Setup: func(b api.PluginBuild) {
-		b.OnResolve(api.OnResolveOptions{Filter: ".*"}, func(a api.OnResolveArgs) (api.OnResolveResult, error) {
-			p := a.Path
-			if strings.HasPrefix(p, "data:") {
-				return api.OnResolveResult{External: true}, nil
-			}
-			if v, ok := vendorPath(p); ok {
-				p = v
-			} else if strings.HasPrefix(p, "./") || strings.HasPrefix(p, "../") ||
-				(strings.HasSuffix(a.Importer, ".css") && !strings.HasPrefix(p, "@")) {
-				// CSS resolves url('x.css') relative to the stylesheet
-				p = path.Join(path.Dir(a.Importer), p)
-			} else if a.Kind != api.ResolveEntryPoint {
-				return api.OnResolveResult{}, fmt.Errorf("unknown import %q from %s", a.Path, a.Importer)
-			}
-			return api.OnResolveResult{Path: path.Clean(p), Namespace: ns}, nil
-		})
-		b.OnLoad(api.OnLoadOptions{Filter: ".*", Namespace: ns}, func(a api.OnLoadArgs) (api.OnLoadResult, error) {
-			src, err := fs.ReadFile(fsys, a.Path)
-			if err != nil {
-				return api.OnLoadResult{}, err
-			}
-			s := string(src)
-			loader := api.LoaderJS
-			if strings.HasSuffix(a.Path, ".css") {
-				loader = api.LoaderCSS
-			}
-			return api.OnLoadResult{Contents: &s, Loader: loader, ResolveDir: path.Dir(a.Path)}, nil
-		})
+		b.OnResolve(
+			api.OnResolveOptions{Filter: ".*"},
+			func(a api.OnResolveArgs) (api.OnResolveResult, error) {
+				p := a.Path
+				if strings.HasPrefix(p, "data:") {
+					return api.OnResolveResult{External: true}, nil
+				}
+				if v, ok := vendorPath(p); ok {
+					p = v
+				} else if strings.HasPrefix(p, "./") || strings.HasPrefix(p, "../") ||
+					(strings.HasSuffix(a.Importer, ".css") && !strings.HasPrefix(p, "@")) {
+					// CSS resolves url('x.css') relative to the stylesheet
+					p = path.Join(path.Dir(a.Importer), p)
+				} else if a.Kind != api.ResolveEntryPoint {
+					return api.OnResolveResult{}, fmt.Errorf(
+						"unknown import %q from %s",
+						a.Path,
+						a.Importer,
+					)
+				}
+				return api.OnResolveResult{Path: path.Clean(p), Namespace: ns}, nil
+			},
+		)
+		b.OnLoad(
+			api.OnLoadOptions{Filter: ".*", Namespace: ns},
+			func(a api.OnLoadArgs) (api.OnLoadResult, error) {
+				src, err := fs.ReadFile(fsys, a.Path)
+				if err != nil {
+					return api.OnLoadResult{}, err
+				}
+				s := string(src)
+				loader := api.LoaderJS
+				if strings.HasSuffix(a.Path, ".css") {
+					loader = api.LoaderCSS
+				}
+				return api.OnLoadResult{
+					Contents:   &s,
+					Loader:     loader,
+					ResolveDir: path.Dir(a.Path),
+				}, nil
+			},
+		)
 	}}
 }
 

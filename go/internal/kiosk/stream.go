@@ -36,7 +36,12 @@ func DirectStreamInfo(u string) URLInfo {
 	if p, err := url.Parse(u); err == nil {
 		title = p.Host + p.Path
 	}
-	return URLInfo{URL: u, Title: title, Site: strings.ToUpper(strings.SplitN(u, ":", 2)[0]), Live: true}
+	return URLInfo{
+		URL:   u,
+		Title: title,
+		Site:  strings.ToUpper(strings.SplitN(u, ":", 2)[0]),
+		Live:  true,
+	}
 }
 
 // StreamSpec turns a chosen format into the spec stored with a stream entry:
@@ -48,11 +53,23 @@ func StreamSpec(f URLFormat) string {
 		return "b"
 	}
 	h := f.Height
-	return fmt.Sprintf("%s/bv*[height<=%d][vcodec^=avc1]+ba/b[height<=%d]/bv*[height<=%d]+ba/b", f.Spec, h, h, h)
+	return fmt.Sprintf(
+		"%s/bv*[height<=%d][vcodec^=avc1]+ba/b[height<=%d]/bv*[height<=%d]+ba/b",
+		f.Spec,
+		h,
+		h,
+		h,
+	)
 }
 
 // AddStream puts a URL into the playlist at pos (0 = end) without downloading.
-func (s *Service) AddStream(ctx context.Context, info URLInfo, f URLFormat, title string, pos int) (db.Media, error) {
+func (s *Service) AddStream(
+	ctx context.Context,
+	info URLInfo,
+	f URLFormat,
+	title string,
+	pos int,
+) (db.Media, error) {
 	if title = strings.TrimSpace(title); title == "" {
 		title = info.Title
 	}
@@ -85,7 +102,8 @@ func uniqueStreamName() string {
 // streamThumbs renders the small and the large preview from src (an image
 // URL or the stream itself) with ffmpeg.
 func (s *Service) streamThumbs(ctx context.Context, m db.Media, src string) {
-	if !strings.HasPrefix(src, "http://") && !strings.HasPrefix(src, "https://") && !IsDirectStream(src) {
+	if !strings.HasPrefix(src, "http://") && !strings.HasPrefix(src, "https://") &&
+		!IsDirectStream(src) {
 		return
 	}
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -98,7 +116,8 @@ func (s *Service) streamThumbs(ctx context.Context, m db.Media, src string) {
 		dst := filepath.Join(s.cfg.ThumbDir, name)
 		tmp := dst + ".tmp.jpg"
 		out, err := exec.CommandContext(ctx, s.cfg.FFmpeg, "-v", "error", "-y", "-nostdin", "-i", src,
-			"-frames:v", "1", "-vf", fmt.Sprintf("scale=%d:-2", w), "-q:v", "5", tmp).CombinedOutput()
+			"-frames:v", "1", "-vf", fmt.Sprintf("scale=%d:-2", w), "-q:v", "5", tmp).
+			CombinedOutput()
 		if err != nil {
 			os.Remove(tmp)
 			slog.Warn("stream thumbnail", "id", m.ID, "err", lastLine(out))
@@ -122,7 +141,10 @@ func (s *Service) SetStreamFormat(ctx context.Context, id int64, f URLFormat) er
 	if m.Kind != "stream" {
 		return ErrNotFound
 	}
-	if err := s.st.SetMediaFormat(ctx, db.SetMediaFormatParams{Format: StreamSpec(f), Height: int64(f.Height), ID: id}); err != nil {
+	if err := s.st.SetMediaFormat(
+		ctx,
+		db.SetMediaFormatParams{Format: StreamSpec(f), Height: int64(f.Height), ID: id},
+	); err != nil {
 		return err
 	}
 	s.Hub.Publish(Event{Type: EventPlaylist})
@@ -138,7 +160,10 @@ func (s *Service) reloadEntry(ctx context.Context, m db.Media) {
 	}
 	path := s.MediaPath(m)
 	if pl, err := s.player.Playlist(ctx); err == nil {
-		if i := slices.IndexFunc(pl, func(e mpv.PlaylistEntry) bool { return e.Filename == path }); i >= 0 {
+		if i := slices.IndexFunc(
+			pl,
+			func(e mpv.PlaylistEntry) bool { return e.Filename == path },
+		); i >= 0 {
 			s.player.Command(ctx, "playlist-remove", i)
 		}
 	}

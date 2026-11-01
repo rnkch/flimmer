@@ -117,7 +117,8 @@ func migrate(ctx context.Context, conn *sql.DB) error {
 		return err
 	}
 	var hasJobs int
-	conn.QueryRowContext(ctx, "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'jobs'").Scan(&hasJobs)
+	conn.QueryRowContext(ctx, "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'jobs'").
+		Scan(&hasJobs)
 	if hasJobs == 0 {
 		// Fresh database: schema.sql creates the current version.
 		_, err := conn.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version = %d", schemaVersion))
@@ -142,7 +143,10 @@ func migrate(ctx context.Context, conn *sql.DB) error {
 			tx.Rollback()
 			return fmt.Errorf("migration %d: %w", version, err)
 		}
-		if _, err := tx.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version = %d", version+1)); err != nil {
+		if _, err := tx.ExecContext(
+			ctx,
+			fmt.Sprintf("PRAGMA user_version = %d", version+1),
+		); err != nil {
 			tx.Rollback()
 			return err
 		}

@@ -27,21 +27,57 @@ import (
 func main() {
 	home, _ := os.UserHomeDir()
 	var (
-		dataDir   = flag.String("data", home+"/.local/share/flimmerkiste", "database, temp files, thumbnails and the HTTPS certificate")
-		mediaDir  = flag.String("media", "", "media directory (default <data>/media)")
-		creds     = flag.String("credentials", home+"/.config/flimmerkiste/credentials", "BOT_TOKEN / GROUP_ID / WEB_PASSWORD file (optional; without a bot token no Telegram)")
-		listen    = flag.String("listen", "127.0.0.1:8080,tailscale:8080", "web UI addresses, comma separated; tailscale:PORT = all Tailscale IPs; empty = off")
-		listenTLS = flag.String("listen-tls", ":8443", "HTTPS address for the local network (self-signed certificate); empty = off")
-		publicURL = flag.String("public-url", "", "address shown in the QR code; default https://<LAN IP>:<port>")
-		socket    = flag.String("mpv-socket", "/tmp/flimmerkiste-mpv.sock", "mpv IPC socket")
-		mpvArgs   = flag.String("mpv-args", "", "extra mpv arguments, space separated")
-		encoder   = flag.String("encoder", "h264_v4l2m2m", "ffmpeg H.264 encoder")
-		hdmiFlag  = flag.String("hdmi-flag", home+"/.needs-hdmi", "file whose existence selects HDMI output")
-		nmcli     = flag.String("nmcli", "sudo -n nmcli", "NetworkManager CLI for the Wi-Fi settings, space separated; empty = off")
-		fallback  = flag.String("fallback-wifi", kiosk.DefaultFallbackWifi, "ssid:password saved once as the lowest-priority Wi-Fi (e.g. a phone hotspot); empty = none")
-		updRepo   = flag.String("update-repo", kiosk.DefaultUpdateRepo, "GitHub owner/name whose releases the web UI and /upgrade install; empty = updates off")
-		showVer   = flag.Bool("version", false, "print the version and exit")
-		debugLog  = flag.Bool("v", false, "debug logging")
+		dataDir = flag.String(
+			"data",
+			home+"/.local/share/flimmerkiste",
+			"database, temp files, thumbnails and the HTTPS certificate",
+		)
+		mediaDir = flag.String("media", "", "media directory (default <data>/media)")
+		creds    = flag.String(
+			"credentials",
+			home+"/.config/flimmerkiste/credentials",
+			"BOT_TOKEN / GROUP_ID / WEB_PASSWORD file (optional; without a bot token no Telegram)",
+		)
+		listen = flag.String(
+			"listen",
+			"127.0.0.1:8080,tailscale:8080",
+			"web UI addresses, comma separated; tailscale:PORT = all Tailscale IPs; empty = off",
+		)
+		listenTLS = flag.String(
+			"listen-tls",
+			":8443",
+			"HTTPS address for the local network (self-signed certificate); empty = off",
+		)
+		publicURL = flag.String(
+			"public-url",
+			"",
+			"address shown in the QR code; default https://<LAN IP>:<port>",
+		)
+		socket   = flag.String("mpv-socket", "/tmp/flimmerkiste-mpv.sock", "mpv IPC socket")
+		mpvArgs  = flag.String("mpv-args", "", "extra mpv arguments, space separated")
+		encoder  = flag.String("encoder", "h264_v4l2m2m", "ffmpeg H.264 encoder")
+		hdmiFlag = flag.String(
+			"hdmi-flag",
+			home+"/.needs-hdmi",
+			"file whose existence selects HDMI output",
+		)
+		nmcli = flag.String(
+			"nmcli",
+			"sudo -n nmcli",
+			"NetworkManager CLI for the Wi-Fi settings, space separated; empty = off",
+		)
+		fallback = flag.String(
+			"fallback-wifi",
+			kiosk.DefaultFallbackWifi,
+			"ssid:password saved once as the lowest-priority Wi-Fi (e.g. a phone hotspot); empty = none",
+		)
+		updRepo = flag.String(
+			"update-repo",
+			kiosk.DefaultUpdateRepo,
+			"GitHub owner/name whose releases the web UI and /upgrade install; empty = updates off",
+		)
+		showVer  = flag.Bool("version", false, "print the version and exit")
+		debugLog = flag.Bool("v", false, "debug logging")
 	)
 	flag.Parse()
 	if *showVer {
@@ -69,13 +105,29 @@ func main() {
 	}
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, opts)))
 
-	if err := run(*mediaDir, *dataDir, *creds, *listen, *listenTLS, *publicURL, *socket, *mpvArgs, *encoder, *hdmiFlag, *nmcli, *fallback, *updRepo); err != nil {
+	if err := run(
+		*mediaDir,
+		*dataDir,
+		*creds,
+		*listen,
+		*listenTLS,
+		*publicURL,
+		*socket,
+		*mpvArgs,
+		*encoder,
+		*hdmiFlag,
+		*nmcli,
+		*fallback,
+		*updRepo,
+	); err != nil {
 		slog.Error("fatal", "err", err)
 		os.Exit(1)
 	}
 }
 
-func run(mediaDir, dataDir, credsPath, listen, listenTLS, publicURL, socket, mpvArgs, encoder, hdmiFlag, nmcli, fallbackWifi, updateRepo string) error {
+func run(
+	mediaDir, dataDir, credsPath, listen, listenTLS, publicURL, socket, mpvArgs, encoder, hdmiFlag, nmcli, fallbackWifi, updateRepo string,
+) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -114,7 +166,9 @@ func run(mediaDir, dataDir, credsPath, listen, listenTLS, publicURL, socket, mpv
 	player := &mpv.Player{
 		Bin:    "mpv",
 		Socket: socket,
-		Args:   append([]string{"--loop-playlist=inf", "--image-display-duration=5"}, strings.Fields(mpvArgs)...),
+		Args: append(
+			[]string{"--loop-playlist=inf", "--image-display-duration=5"},
+			strings.Fields(mpvArgs)...),
 	}
 	k := kiosk.New(cfg, st, player)
 	if k.CheckPendingUpgrade() {

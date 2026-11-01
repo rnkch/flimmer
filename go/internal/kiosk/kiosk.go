@@ -289,7 +289,17 @@ func (s *Service) SetDisplayName(ctx context.Context, name string) error {
 
 // NameHues are the palette's hue families the header name can take; the
 // theme has a readable shade of each per color scheme (--kiosk-hue-*).
-var NameHues = []string{"red", "orange", "yellow", "green", "cyan", "blue", "indigo", "purple", "pink"}
+var NameHues = []string{
+	"red",
+	"orange",
+	"yellow",
+	"green",
+	"cyan",
+	"blue",
+	"indigo",
+	"purple",
+	"pink",
+}
 
 var ErrBadHue = errors.New("unknown color")
 
@@ -302,7 +312,11 @@ func HashHue(name string) string {
 }
 
 // DisplayHue is the chosen color of the header name, "" for automatic.
-func (s *Service) DisplayHue(ctx context.Context) string { return s.Setting(ctx, SettingDisplayHue) }
+func (s *Service) DisplayHue(
+	ctx context.Context,
+) string {
+	return s.Setting(ctx, SettingDisplayHue)
+}
 
 // SetDisplayHue stores the color; "" goes back to the automatic one.
 func (s *Service) SetDisplayHue(ctx context.Context, hue string) error {

@@ -73,7 +73,10 @@ func (c *Certs) Refresh() error {
 	names, ips := hostIdentity()
 	certPath, keyPath := filepath.Join(c.dir, "cert.pem"), filepath.Join(c.dir, "key.pem")
 	if pair, err := tls.LoadX509KeyPair(certPath, keyPath); err == nil {
-		if leaf, err := x509.ParseCertificate(pair.Certificate[0]); err == nil && covers(leaf, names, ips) &&
+		if leaf, err := x509.ParseCertificate(
+			pair.Certificate[0],
+		); err == nil &&
+			covers(leaf, names, ips) &&
 			time.Until(leaf.NotAfter) > 30*24*time.Hour {
 			c.set(&pair, leaf)
 			return nil
@@ -108,7 +111,11 @@ func covers(leaf *x509.Certificate, names []string, ips []net.IP) bool {
 	return true
 }
 
-func generate(names []string, ips []net.IP, certPath, keyPath string) (*tls.Certificate, *x509.Certificate, error) {
+func generate(
+	names []string,
+	ips []net.IP,
+	certPath, keyPath string,
+) (*tls.Certificate, *x509.Certificate, error) {
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, nil, err
@@ -116,8 +123,11 @@ func generate(names []string, ips []net.IP, certPath, keyPath string) (*tls.Cert
 	serial, _ := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 120))
 	now := time.Now()
 	tmpl := &x509.Certificate{
-		SerialNumber:          serial,
-		Subject:               pkix.Name{CommonName: "Flimmerkiste", Organization: []string{"Flimmerkiste"}},
+		SerialNumber: serial,
+		Subject: pkix.Name{
+			CommonName:   "Flimmerkiste",
+			Organization: []string{"Flimmerkiste"},
+		},
 		NotBefore:             now.Add(-time.Hour),
 		NotAfter:              now.Add(certValidity),
 		KeyUsage:              x509.KeyUsageDigitalSignature,

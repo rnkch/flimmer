@@ -49,14 +49,18 @@ func TestFallbackWifiOnce(t *testing.T) {
 			adds = append(adds, c)
 		}
 	}
-	if len(adds) != 1 || !strings.Contains(adds[0], "con-name flimmerkiste-fallback ssid flimmerkiste") ||
+	if len(adds) != 1 ||
+		!strings.Contains(adds[0], "con-name flimmerkiste-fallback ssid flimmerkiste") ||
 		!strings.Contains(adds[0], "connection.autoconnect-priority -10") {
 		t.Fatalf("adds: %q", adds)
 	}
 }
 
 func TestWifiNetworksAndSave(t *testing.T) {
-	s, dir := newWifiService(t, "Kino\\:Foyer:72:WPA2\nKino\\:Foyer:30:WPA2\nCafe:40:\nUni:55:WPA2 802.1X\nNeu:20:WPA3\n:80:WPA2\nflimmerkiste:90:WPA2\n")
+	s, dir := newWifiService(
+		t,
+		"Kino\\:Foyer:72:WPA2\nKino\\:Foyer:30:WPA2\nCafe:40:\nUni:55:WPA2 802.1X\nNeu:20:WPA3\n:80:WPA2\nflimmerkiste:90:WPA2\n",
+	)
 	ctx := context.Background()
 	s.EnsureFallbackWifi(ctx)
 
@@ -98,7 +102,13 @@ func TestWifiNetworksAndSave(t *testing.T) {
 	if err := s.SaveWifi(ctx, "Kino:Foyer", "anders123"); err != nil {
 		t.Fatal(err)
 	}
-	if c := calls(t, dir); !strings.HasPrefix(c[len(c)-1], "connection modify id Kino:Foyer wifi-sec.key-mgmt wpa-psk wifi-sec.psk anders123") {
+	if c := calls(
+		t,
+		dir,
+	); !strings.HasPrefix(
+		c[len(c)-1],
+		"connection modify id Kino:Foyer wifi-sec.key-mgmt wpa-psk wifi-sec.psk anders123",
+	) {
 		t.Fatalf("last call %q", c[len(c)-1])
 	}
 
@@ -138,7 +148,11 @@ func TestDeleteAndConnectWifi(t *testing.T) {
 	}
 	deadline := time.Now().Add(5 * time.Second)
 	for {
-		if b, _ := os.ReadFile(filepath.Join(dir, "active")); strings.TrimSpace(string(b)) == "Kino" {
+		if b, _ := os.ReadFile(
+			filepath.Join(dir, "active"),
+		); strings.TrimSpace(
+			string(b),
+		) == "Kino" {
 			break
 		}
 		if time.Now().After(deadline) {

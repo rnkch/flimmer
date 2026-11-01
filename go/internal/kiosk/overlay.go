@@ -84,7 +84,10 @@ func (s *Service) hideQRLocked(ctx context.Context) {
 	}
 	s.qr.shown = false
 	s.player.Command(ctx, "overlay-remove", qrOverlayID)
-	s.player.CommandNamed(ctx, map[string]any{"name": "osd-overlay", "id": qrTextID, "format": "none", "data": ""})
+	s.player.CommandNamed(
+		ctx,
+		map[string]any{"name": "osd-overlay", "id": qrTextID, "format": "none", "data": ""},
+	)
 }
 
 func (s *Service) showQR(ctx context.Context) error {
@@ -125,7 +128,21 @@ func (s *Service) showQR(ctx context.Context) error {
 	if err := os.WriteFile(file, buf, 0o600); err != nil {
 		return err
 	}
-	if _, err := s.player.Command(ctx, "overlay-add", qrOverlayID, x, y, file, 0, "bgra", w, h, w*4, dw, h); err != nil {
+	if _, err := s.player.Command(
+		ctx,
+		"overlay-add",
+		qrOverlayID,
+		x,
+		y,
+		file,
+		0,
+		"bgra",
+		w,
+		h,
+		w*4,
+		dw,
+		h,
+	); err != nil {
 		return err
 	}
 	// The address below the code, centered; ASS coordinates in OSD pixels.

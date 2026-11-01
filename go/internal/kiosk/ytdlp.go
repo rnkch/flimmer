@@ -93,7 +93,8 @@ type ytInfo struct {
 func (s *Service) ProbeURL(ctx context.Context, url string) (URLInfo, error) {
 	ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
 	defer cancel()
-	out, err := exec.CommandContext(ctx, s.cfg.YtDlp, "-J", "--no-playlist", "--no-warnings", "--", url).Output()
+	out, err := exec.CommandContext(ctx, s.cfg.YtDlp, "-J", "--no-playlist", "--no-warnings", "--", url).
+		Output()
 	if err != nil {
 		var ee *exec.ExitError
 		if errors.As(err, &ee) {
@@ -115,7 +116,14 @@ func chooseFormats(url string, yi ytInfo) (URLInfo, error) {
 	if yi.Type == "playlist" || yi.Type == "multi_video" {
 		return URLInfo{}, ErrPlaylist
 	}
-	info := URLInfo{URL: url, Title: yi.Title, Thumbnail: yi.Thumbnail, Site: yi.Extractor, Duration: yi.Duration, Live: yi.IsLive}
+	info := URLInfo{
+		URL:       url,
+		Title:     yi.Title,
+		Thumbnail: yi.Thumbnail,
+		Site:      yi.Extractor,
+		Duration:  yi.Duration,
+		Live:      yi.IsLive,
+	}
 	if yi.WebpageURL != "" {
 		info.URL = yi.WebpageURL
 	}
@@ -142,7 +150,8 @@ func chooseFormats(url string, yi ytInfo) (URLInfo, error) {
 		return s
 	}
 	for i, f := range yi.Formats {
-		if f.VCodec != "none" || f.ACodec == "" || f.ACodec == "none" || strings.Contains(f.ID, "drc") {
+		if f.VCodec != "none" || f.ACodec == "" || f.ACodec == "none" ||
+			strings.Contains(f.ID, "drc") {
 			continue
 		}
 		if audio == nil || audioScore(f) > audioScore(*audio) {
@@ -161,12 +170,20 @@ func chooseFormats(url string, yi ytInfo) (URLInfo, error) {
 			continue
 		}
 		k := key{f.Height, int(math.Round(f.FPS)), codecName(f.VCodec)}
-		if old, ok := best[k]; !ok || (strings.HasPrefix(old.Protocol, "m3u8") && !strings.HasPrefix(f.Protocol, "m3u8")) {
+		if old, ok := best[k]; !ok ||
+			(strings.HasPrefix(old.Protocol, "m3u8") && !strings.HasPrefix(f.Protocol, "m3u8")) {
 			best[k] = f
 		}
 	}
 	for k, f := range best {
-		uf := URLFormat{Spec: f.ID, Height: k.h, FPS: k.fps, Codec: k.codec, Size: size(f), Slow: k.codec != "H.264"}
+		uf := URLFormat{
+			Spec:   f.ID,
+			Height: k.h,
+			FPS:    k.fps,
+			Codec:  k.codec,
+			Size:   size(f),
+			Slow:   k.codec != "H.264",
+		}
 		if f.ACodec == "none" || f.ACodec == "" {
 			if audio == nil {
 				continue // video without any audio track: skip
@@ -236,19 +253,39 @@ func codecName(vcodec string) string {
 
 // EnqueueURL queues a download; the worker fetches it with yt-dlp and then
 // transcodes it like any upload. size is the expected download size (0 = unknown).
-func (s *Service) EnqueueURL(ctx context.Context, url, format, title string, c Caption, size int64) (db.Job, error) {
+func (s *Service) EnqueueURL(
+	ctx context.Context,
+	url, format, title string,
+	c Caption,
+	size int64,
+) (db.Job, error) {
 	if IsDirectStream(url) {
 		return db.Job{}, ErrLive
 	}
-	if free, _, err := sysinfo.DiskFree(s.cfg.TmpDir); err == nil && size > 0 && uint64(size)+200<<20 > free {
-		return db.Job{}, fmt.Errorf("not enough disk space: %d MB free, download is about %d MB", free>>20, size>>20)
+	if free, _, err := sysinfo.DiskFree(
+		s.cfg.TmpDir,
+	); err == nil && size > 0 &&
+		uint64(size)+200<<20 > free {
+		return db.Job{}, fmt.Errorf(
+			"not enough disk space: %d MB free, download is about %d MB",
+			free>>20,
+			size>>20,
+		)
 	}
 	if c.Title != "" {
 		title = c.Title
 	}
 	return s.enqueue(ctx, db.InsertJobParams{
-		Source: "url", URL: url, Format: format, Title: title, OrigName: title,
-		WantPosition: int64(c.Position), ImageDurationS: int64(c.Seconds), NoTranscode: boolInt(c.NoTranscode),
+		Source:   "url",
+		URL:      url,
+		Format:   format,
+		Title:    title,
+		OrigName: title,
+		WantPosition: int64(
+			c.Position,
+		),
+		ImageDurationS: int64(c.Seconds),
+		NoTranscode:    boolInt(c.NoTranscode),
 	})
 }
 
@@ -272,15 +309,29 @@ func parseProgress(line string) (id string, pct float64, ok bool) {
 
 func (s *Service) download(ctx context.Context, j db.Job) (string, error) {
 	parts := strings.Count(j.Format, "+") + 1
-	cmd := exec.CommandContext(ctx, s.cfg.YtDlp,
-		"--no-playlist", "--no-warnings", "--no-mtime", "--newline", "--progress",
-		"-f", j.Format, "--merge-output-format", "mkv",
-		"-o", filepath.Join(s.cfg.TmpDir, fmt.Sprintf("url-%d.%%(ext)s", j.ID)),
+	cmd := exec.CommandContext(
+		ctx,
+		s.cfg.YtDlp,
+		"--no-playlist",
+		"--no-warnings",
+		"--no-mtime",
+		"--newline",
+		"--progress",
+		"-f",
+		j.Format,
+		"--merge-output-format",
+		"mkv",
+		"-o",
+		filepath.Join(s.cfg.TmpDir, fmt.Sprintf("url-%d.%%(ext)s", j.ID)),
 		// "download:" selects the template for download progress; it is not
 		// printed. The marker is what we look for: "KIOSKPROGRESS mp4   4.2%".
-		"--progress-template", "download:"+progressMarker+" %(info.format_id)s %(progress._percent_str)s",
-		"--print", "after_move:FILE:%(filepath)s",
-		"--", j.URL)
+		"--progress-template",
+		"download:"+progressMarker+" %(info.format_id)s %(progress._percent_str)s",
+		"--print",
+		"after_move:FILE:%(filepath)s",
+		"--",
+		j.URL,
+	)
 	killGroupOnCancel(cmd) // the standalone yt-dlp runs as two processes, plus ffmpeg for merging
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {

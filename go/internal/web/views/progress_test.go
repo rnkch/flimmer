@@ -58,7 +58,10 @@ func TestPlayerProgressSeekable(t *testing.T) {
 			t.Errorf("seekable bar misses %q:\n%s", want, html)
 		}
 	}
-	if html := render(NowPlaying{TimePos: 3, Duration: 10}); strings.Contains(html, "seekBar") || strings.Contains(html, "/player/seek") {
+	if html := render(
+		NowPlaying{TimePos: 3, Duration: 10},
+	); strings.Contains(html, "seekBar") ||
+		strings.Contains(html, "/player/seek") {
 		t.Errorf("image bar is clickable:\n%s", html)
 	}
 }

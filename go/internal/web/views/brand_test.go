@@ -26,20 +26,31 @@ func TestNameHue(t *testing.T) {
 		BrandName(name, set, hue).Render(context.Background(), &b)
 		return b.String()
 	}
-	if html := render("Foyer", "Foyer", ""); !strings.Contains(html, `style="color: var(--kiosk-hue-`+nameHue("Foyer", "")+`);"`) {
+	if html := render(
+		"Foyer",
+		"Foyer",
+		"",
+	); !strings.Contains(
+		html,
+		`style="color: var(--kiosk-hue-`+nameHue("Foyer", "")+`);"`,
+	) {
 		t.Errorf("automatic color missing:\n%s", html)
 	}
 	// The popover: the name field (empty while the hostname is shown),
 	// "auto" plus nine dots, the chosen one pressed.
 	html := render("p4", "", "indigo")
-	if !strings.Contains(html, `style="color: var(--kiosk-hue-indigo);"`) || !strings.Contains(html, `<wa-popover for="brand-name"`) ||
+	if !strings.Contains(html, `style="color: var(--kiosk-hue-indigo);"`) ||
+		!strings.Contains(html, `<wa-popover for="brand-name"`) ||
 		!strings.Contains(html, `name="name" value=""`) {
 		t.Errorf("color, popover or empty name field missing:\n%s", html)
 	}
 	if n := strings.Count(html, `name="hue"`); n != 10 {
 		t.Errorf("%d color dots, want 10", n)
 	}
-	if !strings.Contains(html, `value="indigo" class="hue" style="background: var(--kiosk-hue-indigo);"`) ||
+	if !strings.Contains(
+		html,
+		`value="indigo" class="hue" style="background: var(--kiosk-hue-indigo);"`,
+	) ||
 		strings.Count(html, `aria-pressed="true"`) != 1 {
 		t.Errorf("chosen dot not marked:\n%s", html)
 	}

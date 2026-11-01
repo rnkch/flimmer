@@ -20,7 +20,12 @@ import (
 
 func (s *Service) List(ctx context.Context) ([]db.Media, error) { return s.st.ListMedia(ctx) }
 
-func (s *Service) Get(ctx context.Context, id int64) (db.Media, error) { return s.st.GetMedia(ctx, id) }
+func (s *Service) Get(
+	ctx context.Context,
+	id int64,
+) (db.Media, error) {
+	return s.st.GetMedia(ctx, id)
+}
 
 // MediaPath is what mpv plays: the file, or for streams the URL.
 func (s *Service) MediaPath(m db.Media) string {
@@ -33,7 +38,10 @@ func (s *Service) MediaPath(m db.Media) string {
 // reorder writes positions 1..n for ids in the given order.
 func reorder(ctx context.Context, q *db.Queries, ids []int64) error {
 	for i, id := range ids {
-		if err := q.SetMediaPosition(ctx, db.SetMediaPositionParams{Position: int64(i + 1), ID: id}); err != nil {
+		if err := q.SetMediaPosition(
+			ctx,
+			db.SetMediaPositionParams{Position: int64(i + 1), ID: id},
+		); err != nil {
 			return err
 		}
 	}
@@ -166,7 +174,10 @@ func (s *Service) SetImageDuration(ctx context.Context, id int64, seconds int) e
 	if err != nil {
 		return err
 	}
-	if err := s.st.SetMediaImageDuration(ctx, db.SetMediaImageDurationParams{ImageDurationS: int64(seconds), ID: id}); err != nil {
+	if err := s.st.SetMediaImageDuration(
+		ctx,
+		db.SetMediaImageDurationParams{ImageDurationS: int64(seconds), ID: id},
+	); err != nil {
 		return err
 	}
 	s.Hub.Publish(Event{Type: EventPlaylist})
@@ -300,7 +311,12 @@ func (s *Service) Seek(ctx context.Context, pos float64) error {
 		return ErrNotSeekable
 	}
 	var seekable bool
-	if data, err := s.player.Command(ctx, "get_property", "seekable"); err != nil || json.Unmarshal(data, &seekable) != nil || !seekable {
+	if data, err := s.player.Command(
+		ctx,
+		"get_property",
+		"seekable",
+	); err != nil || json.Unmarshal(data, &seekable) != nil ||
+		!seekable {
 		return ErrNotSeekable
 	}
 	_, err := s.player.Command(ctx, "seek", min(max(pos, 0), ps.Duration-1), "absolute")
@@ -378,9 +394,18 @@ func (s *Service) RestartService(ctx context.Context) error {
 	s.Logf(ctx, slog.LevelInfo, "service restart requested")
 	go func() {
 		time.Sleep(500 * time.Millisecond)
-		out, err := exec.Command("sudo", "-n", "systemctl", "--no-block", "restart", "flimmerkiste.service").CombinedOutput()
+		out, err := exec.Command("sudo", "-n", "systemctl", "--no-block", "restart", "flimmerkiste.service").
+			CombinedOutput()
 		if err != nil && !stoppedByRestart(err) {
-			s.Logf(context.Background(), slog.LevelError, "service restart failed", "err", err, "out", strings.TrimSpace(string(out)))
+			s.Logf(
+				context.Background(),
+				slog.LevelError,
+				"service restart failed",
+				"err",
+				err,
+				"out",
+				strings.TrimSpace(string(out)),
+			)
 		}
 	}()
 	return nil

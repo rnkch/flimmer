@@ -43,7 +43,12 @@ func TestCertsCoverHostAndAreReused(t *testing.T) {
 	if covers(leaf, names, append(ips, net.ParseIP("10.99.99.99"))) {
 		t.Fatal("covers() accepts an unknown address")
 	}
-	generate([]string{"localhost"}, nil, filepath.Join(dir, "cert.pem"), filepath.Join(dir, "key.pem"))
+	generate(
+		[]string{"localhost"},
+		nil,
+		filepath.Join(dir, "cert.pem"),
+		filepath.Join(dir, "key.pem"),
+	)
 	c3, err := NewCerts(dir)
 	if err != nil || !covers(c3.leaf, names, ips) {
 		t.Fatalf("not renewed for the host's addresses: %v", err)

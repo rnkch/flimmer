@@ -31,7 +31,10 @@ func (s *Service) SetWebPassword(ctx context.Context, pw string) error {
 	if err != nil {
 		return err
 	}
-	if err := s.st.PutSetting(ctx, db.PutSettingParams{Key: SettingWebPasswordHash, Value: string(h)}); err != nil {
+	if err := s.st.PutSetting(
+		ctx,
+		db.PutSettingParams{Key: SettingWebPasswordHash, Value: string(h)},
+	); err != nil {
 		return err
 	}
 	return s.st.DeleteAllSessions(ctx)

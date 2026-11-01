@@ -37,7 +37,11 @@ func newServer(t *testing.T) (*Server, *kiosk.Service) {
 func TestBundleFromEmbeddedFiles(t *testing.T) {
 	s, _ := newServer(t)
 	if len(s.bundle.JS.Contents) < 100_000 || len(s.bundle.CSS.Contents) < 10_000 {
-		t.Fatalf("bundle too small: js %d css %d", len(s.bundle.JS.Contents), len(s.bundle.CSS.Contents))
+		t.Fatalf(
+			"bundle too small: js %d css %d",
+			len(s.bundle.JS.Contents),
+			len(s.bundle.CSS.Contents),
+		)
 	}
 	h := s.Handler()
 	for _, p := range []string{"/static/" + s.bundle.JS.Name, "/static/" + s.bundle.CSS.Name, "/static/icons/play.svg"} {
@@ -60,7 +64,11 @@ func TestLoginRequiredAndCSRF(t *testing.T) {
 	}
 
 	rec = httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/login", strings.NewReader(url.Values{"password": {"wrong-password"}}.Encode()))
+	req := httptest.NewRequest(
+		"POST",
+		"/login",
+		strings.NewReader(url.Values{"password": {"wrong-password"}}.Encode()),
+	)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusUnauthorized {
@@ -69,7 +77,11 @@ func TestLoginRequiredAndCSRF(t *testing.T) {
 	s.failures = 0 // skip the login back-off in the test
 
 	rec = httptest.NewRecorder()
-	req = httptest.NewRequest("POST", "/login", strings.NewReader(url.Values{"password": {"test-password-123"}}.Encode()))
+	req = httptest.NewRequest(
+		"POST",
+		"/login",
+		strings.NewReader(url.Values{"password": {"test-password-123"}}.Encode()),
+	)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	h.ServeHTTP(rec, req)
 	cookies := rec.Result().Cookies()

@@ -148,7 +148,11 @@ func (bt *Bot) onMessage(ctx context.Context, m *models.Message) {
 	}
 	switch text {
 	case "Upload Media":
-		bt.reply(ctx, m, "Sende ein Foto oder Video. Beschriftung (optional): <Reihenfolge> <Name> [<Sekunden>]\n\nGrößere Dateien als 20 MB über die Weboberfläche hochladen.\n\nNutze /slides zum Verwalten.")
+		bt.reply(
+			ctx,
+			m,
+			"Sende ein Foto oder Video. Beschriftung (optional): <Reihenfolge> <Name> [<Sekunden>]\n\nGrößere Dateien als 20 MB über die Weboberfläche hochladen.\n\nNutze /slides zum Verwalten.",
+		)
 	case "Slides":
 		bt.showSlides(ctx, m.Chat.ID, 0, 1)
 	case "Reload Playlist":
@@ -248,11 +252,28 @@ func (bt *Bot) upgrade(ctx context.Context, m *models.Message, arg string) {
 		bt.reply(ctx, m, "✅ Flimmerkiste ist aktuell ("+info.Current+").")
 		return
 	case !info.CanInstall:
-		bt.reply(ctx, m, fmt.Sprintf("ℹ️ Version %s ist da, hat aber keinen Download für dieses Gerät.\n%s", info.Latest, info.URL))
+		bt.reply(
+			ctx,
+			m,
+			fmt.Sprintf(
+				"ℹ️ Version %s ist da, hat aber keinen Download für dieses Gerät.\n%s",
+				info.Latest,
+				info.URL,
+			),
+		)
 		return
 	}
 	if arg != "jetzt" && arg != "now" {
-		bt.reply(ctx, m, fmt.Sprintf("⬆️ Neue Version %s (läuft: %s).\n%s\n\nInstallieren: /upgrade jetzt\nDabei startet der Dienst neu: der Bildschirm wird kurz dunkel und die Wiedergabe beginnt von vorn.", info.Latest, info.Current, info.URL))
+		bt.reply(
+			ctx,
+			m,
+			fmt.Sprintf(
+				"⬆️ Neue Version %s (läuft: %s).\n%s\n\nInstallieren: /upgrade jetzt\nDabei startet der Dienst neu: der Bildschirm wird kurz dunkel und die Wiedergabe beginnt von vorn.",
+				info.Latest,
+				info.Current,
+				info.URL,
+			),
+		)
 		return
 	}
 	bt.reply(ctx, m, "⬇️ Lade "+info.Latest+" herunter und prüfe sie…")
@@ -261,9 +282,17 @@ func (bt *Bot) upgrade(ctx context.Context, m *models.Message, arg string) {
 	case err != nil:
 		bt.reply(ctx, m, "⚠️ Nicht aktualisiert: "+upgradeErrText(err))
 	case res.Restarted:
-		bt.reply(ctx, m, "✅ "+res.To+" ist installiert, Flimmerkiste startet neu und meldet sich gleich wieder.")
+		bt.reply(
+			ctx,
+			m,
+			"✅ "+res.To+" ist installiert, Flimmerkiste startet neu und meldet sich gleich wieder.",
+		)
 	default:
-		bt.reply(ctx, m, "✅ "+res.To+" ist installiert. Flimmerkiste muss von Hand neu gestartet werden.")
+		bt.reply(
+			ctx,
+			m,
+			"✅ "+res.To+" ist installiert. Flimmerkiste muss von Hand neu gestartet werden.",
+		)
 	}
 }
 
@@ -298,13 +327,22 @@ func (bt *Bot) lock(ctx context.Context, m *models.Message, arg string) {
 		return
 	}
 	if on {
-		bt.reply(ctx, m, "🔒 Gesperrt: Weiter, Zurück, Pause, Streams, Neustarts, QR-Code und WLAN-Wechsel sind blockiert, ebenso Löschen des laufenden Eintrags. Playlist bearbeiten und Hochladen gehen weiter.\nEntsperren: /lock")
+		bt.reply(
+			ctx,
+			m,
+			"🔒 Gesperrt: Weiter, Zurück, Pause, Streams, Neustarts, QR-Code und WLAN-Wechsel sind blockiert, ebenso Löschen des laufenden Eintrags. Playlist bearbeiten und Hochladen gehen weiter.\nEntsperren: /lock",
+		)
 	} else {
 		bt.reply(ctx, m, "🔓 Entsperrt.")
 	}
 }
 
-func (bt *Bot) control(ctx context.Context, m *models.Message, fn func(context.Context) error, ok string) {
+func (bt *Bot) control(
+	ctx context.Context,
+	m *models.Message,
+	fn func(context.Context) error,
+	ok string,
+) {
 	if err := fn(ctx); err != nil {
 		bt.reply(ctx, m, warn(err))
 		return
@@ -329,8 +367,11 @@ func (bt *Bot) qr(ctx context.Context, m *models.Message) {
 		bt.reply(ctx, m, "QR-Code ausgeblendet.")
 		return
 	}
-	caption := fmt.Sprintf("📺 Weboberfläche: %s\n\nAuf dem Bildschirm für %d s. Das Zertifikat ist selbst erstellt; der Browser warnt beim ersten Mal.",
-		url, int(kiosk.QRShowFor.Seconds()))
+	caption := fmt.Sprintf(
+		"📺 Weboberfläche: %s\n\nAuf dem Bildschirm für %d s. Das Zertifikat ist selbst erstellt; der Browser warnt beim ersten Mal.",
+		url,
+		int(kiosk.QRShowFor.Seconds()),
+	)
 	png, err := access.PNG(url, 8)
 	if err != nil {
 		bt.reply(ctx, m, caption)
@@ -355,8 +396,13 @@ func (bt *Bot) screenshot(ctx context.Context, m *models.Message) {
 	caption, _, _ := strings.Cut(bt.statusText(ctx), "\n")
 	retry(ctx, func() error {
 		_, err := bt.b.SendPhoto(ctx, &tg.SendPhotoParams{
-			ChatID: m.Chat.ID, Caption: caption, ReplyParameters: &models.ReplyParameters{MessageID: m.ID},
-			Photo: &models.InputFileUpload{Filename: "screen.jpg", Data: bytes.NewReader(jpg)},
+			ChatID:          m.Chat.ID,
+			Caption:         caption,
+			ReplyParameters: &models.ReplyParameters{MessageID: m.ID},
+			Photo: &models.InputFileUpload{
+				Filename: "screen.jpg",
+				Data:     bytes.NewReader(jpg),
+			},
 		})
 		return err
 	})
@@ -376,7 +422,10 @@ func (bt *Bot) resetPassword(ctx context.Context, m *models.Message) {
 	bt.k.Logf(ctx, slog.LevelInfo, "web password reset via Telegram")
 	text := "🔑 Neues Passwort für die Weboberfläche:\n\n" + pw +
 		"\n\nAlle Browser wurden abgemeldet. Ändern unter Einstellungen.\n" +
-		fmt.Sprintf("Diese Nachricht wird in %d Minuten gelöscht.", int(passwordMessageTTL.Minutes()))
+		fmt.Sprintf(
+			"Diese Nachricht wird in %d Minuten gelöscht.",
+			int(passwordMessageTTL.Minutes()),
+		)
 	msg := bt.reply(ctx, m, text)
 	if msg == nil {
 		return
@@ -385,7 +434,10 @@ func (bt *Bot) resetPassword(ctx context.Context, m *models.Message) {
 		select {
 		case <-ctx.Done():
 		case <-time.After(passwordMessageTTL):
-			if _, err := bt.b.DeleteMessage(ctx, &tg.DeleteMessageParams{ChatID: msg.Chat.ID, MessageID: msg.ID}); err != nil {
+			if _, err := bt.b.DeleteMessage(
+				ctx,
+				&tg.DeleteMessageParams{ChatID: msg.Chat.ID, MessageID: msg.ID},
+			); err != nil {
 				slog.Warn("delete password message", "err", err)
 			}
 		}
@@ -406,7 +458,11 @@ func (bt *Bot) restart(ctx context.Context, m *models.Message, arg string) {
 		bt.reply(ctx, m, warn(err))
 		return
 	}
-	bt.reply(ctx, m, "🔄 Player wird neu gestartet, Playlist wird neu geladen.\n(Ganzen Dienst neu starten: /restart all)")
+	bt.reply(
+		ctx,
+		m,
+		"🔄 Player wird neu gestartet, Playlist wird neu geladen.\n(Ganzen Dienst neu starten: /restart all)",
+	)
 }
 
 func (bt *Bot) showMenu(ctx context.Context, m *models.Message) {
@@ -425,8 +481,17 @@ func (bt *Bot) showMenu(ctx context.Context, m *models.Message) {
 // --- uploads ----------------------------------------------------------------
 
 var allowedDocExt = map[string]bool{
-	".jpg": true, ".jpeg": true, ".png": true, ".webp": true, ".gif": true, ".heic": true, ".heif": true,
-	".mp4": true, ".mov": true, ".mkv": true, ".webm": true,
+	".jpg":  true,
+	".jpeg": true,
+	".png":  true,
+	".webp": true,
+	".gif":  true,
+	".heic": true,
+	".heif": true,
+	".mp4":  true,
+	".mov":  true,
+	".mkv":  true,
+	".webm": true,
 }
 
 func (bt *Bot) onMedia(ctx context.Context, m *models.Message) bool {
@@ -532,7 +597,9 @@ func (bt *Bot) onDownloadURL(ctx context.Context, m *models.Message, url string)
 		edit(warn(err))
 		return
 	case info.Live:
-		edit("⚠️ Livestreams lassen sich nicht herunterladen. In der Weboberfläche als Stream hinzufügen.")
+		edit(
+			"⚠️ Livestreams lassen sich nicht herunterladen. In der Weboberfläche als Stream hinzufügen.",
+		)
 		return
 	}
 	size := int64(0)
@@ -596,24 +663,58 @@ func (bt *Bot) send(ctx context.Context, text string, markup models.ReplyMarkup)
 	return bt.sendTo(ctx, bt.groupID, text, markup, nil)
 }
 
-func (bt *Bot) sendMarkup(ctx context.Context, chatID int64, text string, markup models.ReplyMarkup) *models.Message {
+func (bt *Bot) sendMarkup(
+	ctx context.Context,
+	chatID int64,
+	text string,
+	markup models.ReplyMarkup,
+) *models.Message {
 	return bt.sendTo(ctx, chatID, text, markup, nil)
 }
 
-func (bt *Bot) sendTo(ctx context.Context, chatID int64, text string, markup models.ReplyMarkup, rp *models.ReplyParameters) *models.Message {
+func (bt *Bot) sendTo(
+	ctx context.Context,
+	chatID int64,
+	text string,
+	markup models.ReplyMarkup,
+	rp *models.ReplyParameters,
+) *models.Message {
 	var msg *models.Message
 	retry(ctx, func() error {
 		var err error
-		msg, err = bt.b.SendMessage(ctx, &tg.SendMessageParams{ChatID: chatID, Text: text, ReplyMarkup: markup, ReplyParameters: rp})
+		msg, err = bt.b.SendMessage(
+			ctx,
+			&tg.SendMessageParams{
+				ChatID:          chatID,
+				Text:            text,
+				ReplyMarkup:     markup,
+				ReplyParameters: rp,
+			},
+		)
 		return err
 	})
 	return msg
 }
 
 // edit changes a message; must = false drops the edit when rate-limited.
-func (bt *Bot) edit(ctx context.Context, chatID int64, msgID int, text string, markup models.ReplyMarkup, must bool) {
+func (bt *Bot) edit(
+	ctx context.Context,
+	chatID int64,
+	msgID int,
+	text string,
+	markup models.ReplyMarkup,
+	must bool,
+) {
 	do := func() error {
-		_, err := bt.b.EditMessageText(ctx, &tg.EditMessageTextParams{ChatID: chatID, MessageID: msgID, Text: text, ReplyMarkup: markup})
+		_, err := bt.b.EditMessageText(
+			ctx,
+			&tg.EditMessageTextParams{
+				ChatID:      chatID,
+				MessageID:   msgID,
+				Text:        text,
+				ReplyMarkup: markup,
+			},
+		)
 		if err != nil && strings.Contains(err.Error(), "message is not modified") {
 			return nil
 		}

@@ -44,8 +44,20 @@ func (s *Service) frame(ctx context.Context, m db.Media, width int) (string, err
 		args = append(args, "-ss", "1")
 	}
 	tmp := dst + ".tmp.jpg"
-	args = append(args, "-i", s.MediaPath(m), "-frames:v", "1", "-vf", fmt.Sprintf("scale=%d:-2", width), "-q:v", "5", tmp)
-	if out, err := exec.CommandContext(ctx, "nice", append([]string{"-n", "10", s.cfg.FFmpeg}, args...)...).CombinedOutput(); err != nil {
+	args = append(
+		args,
+		"-i",
+		s.MediaPath(m),
+		"-frames:v",
+		"1",
+		"-vf",
+		fmt.Sprintf("scale=%d:-2", width),
+		"-q:v",
+		"5",
+		tmp,
+	)
+	if out, err := exec.CommandContext(ctx, "nice", append([]string{"-n", "10", s.cfg.FFmpeg}, args...)...).
+		CombinedOutput(); err != nil {
 		os.Remove(tmp)
 		return "", fmt.Errorf("thumbnail: %v: %s", err, lastLine(out))
 	}

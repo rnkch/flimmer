@@ -11,7 +11,15 @@ import (
 )
 
 // Observed are the properties pushed to OnProperty while mpv runs.
-var Observed = []string{"path", "media-title", "pause", "playlist-pos", "playlist-count", "time-pos", "duration"}
+var Observed = []string{
+	"path",
+	"media-title",
+	"pause",
+	"playlist-pos",
+	"playlist-count",
+	"time-pos",
+	"duration",
+}
 
 // Player keeps one mpv process running and reconnects after it restarts.
 type Player struct {

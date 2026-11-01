@@ -124,7 +124,13 @@ func jobVariant(state string) string {
 }
 
 // jobLabel values are translation keys.
-var jobLabel = map[string]string{"queued": "Queued", "running": "Running", "done": "Done", "failed": "Failed", "cancelled": "Cancelled"}
+var jobLabel = map[string]string{
+	"queued":    "Queued",
+	"running":   "Running",
+	"done":      "Done",
+	"failed":    "Failed",
+	"cancelled": "Cancelled",
+}
 
 // jobStateLabel names the state, and for running jobs the phase.
 func jobStateLabel(j db.Job) string {
@@ -239,7 +245,10 @@ func seekAttrs(n NowPlaying) templ.Attributes {
 	if !n.Seekable || n.Duration <= 0 {
 		return templ.Attributes{}
 	}
-	return templ.Attributes{"x-data": "seekBar", "data-duration": strconv.FormatFloat(n.Duration, 'f', 1, 64)}
+	return templ.Attributes{
+		"x-data":        "seekBar",
+		"data-duration": strconv.FormatFloat(n.Duration, 'f', 1, 64),
+	}
 }
 
 // hostname and maxNameLen: placeholder and limit of the kiosk name editor.
@@ -264,8 +273,17 @@ func hueSwatch(hue string) templ.SafeCSS {
 }
 
 // hueLabels are translation keys for the color dots' tooltips.
-var hueLabels = map[string]string{"red": "Red", "orange": "Orange", "yellow": "Yellow", "green": "Green",
-	"cyan": "Cyan", "blue": "Blue", "indigo": "Indigo", "purple": "Purple", "pink": "Pink"}
+var hueLabels = map[string]string{
+	"red":    "Red",
+	"orange": "Orange",
+	"yellow": "Yellow",
+	"green":  "Green",
+	"cyan":   "Cyan",
+	"blue":   "Blue",
+	"indigo": "Indigo",
+	"purple": "Purple",
+	"pink":   "Pink",
+}
 
 var nameHueList = kiosk.NameHues
 

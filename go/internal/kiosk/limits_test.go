@@ -63,14 +63,19 @@ func TestSeekWithMpv(t *testing.T) {
 	exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=s=320x240:d=10:r=25",
 		"-pix_fmt", "yuv420p", filepath.Join(s.cfg.MediaDir, "v.mp4")).Run()
 	exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=red:s=64x48", "-frames:v", "1",
-		filepath.Join(s.cfg.MediaDir, "a.png")).Run()
+		filepath.Join(s.cfg.MediaDir, "a.png")).
+		Run()
 	connected := make(chan struct{}, 1)
 	onConnect := p.OnConnect
 	p.OnConnect = func(ctx context.Context) { onConnect(ctx); connected <- struct{}{} }
 	go p.Run(ctx)
 	<-connected
 	s.addMedia(ctx, db.InsertMediaParams{Filename: "v.mp4", Title: "v", Kind: "video"}, 0)
-	img, _ := s.addMedia(ctx, db.InsertMediaParams{Filename: "a.png", Title: "a", Kind: "image", ImageDurationS: 30}, 0)
+	img, _ := s.addMedia(
+		ctx,
+		db.InsertMediaParams{Filename: "a.png", Title: "a", Kind: "image", ImageDurationS: 30},
+		0,
+	)
 
 	waitFor := func(what string, ok func() bool) {
 		t.Helper()
@@ -112,7 +117,11 @@ func TestDisplayName(t *testing.T) {
 	if err := s.SetDisplayName(ctx, "Kinosäle Großer Saal"); err != nil { // 20 characters, 22 bytes
 		t.Fatalf("20 characters with umlauts: %v", err)
 	}
-	if err := s.SetDisplayName(ctx, "Kinosäle Großer Saal!"); !errors.Is(err, ErrNameTooLong) || s.DisplayName(ctx) != "Kinosäle Großer Saal" {
+	if err := s.SetDisplayName(
+		ctx,
+		"Kinosäle Großer Saal!",
+	); !errors.Is(err, ErrNameTooLong) ||
+		s.DisplayName(ctx) != "Kinosäle Großer Saal" {
 		t.Fatalf("21 characters: %v, name %q", err, s.DisplayName(ctx))
 	}
 	if err := s.SetDisplayName(ctx, " "); err != nil || s.DisplayName(ctx) != Hostname() {
@@ -129,7 +138,11 @@ func TestDisplayHue(t *testing.T) {
 	if err := s.SetDisplayHue(ctx, "indigo"); err != nil || s.DisplayHue(ctx) != "indigo" {
 		t.Fatalf("set: %v, %q", err, s.DisplayHue(ctx))
 	}
-	if err := s.SetDisplayHue(ctx, "magenta; background: red"); !errors.Is(err, ErrBadHue) || s.DisplayHue(ctx) != "indigo" {
+	if err := s.SetDisplayHue(
+		ctx,
+		"magenta; background: red",
+	); !errors.Is(err, ErrBadHue) ||
+		s.DisplayHue(ctx) != "indigo" {
 		t.Fatalf("unknown color accepted: %v", err)
 	}
 	if err := s.SetDisplayHue(ctx, ""); err != nil || s.DisplayHue(ctx) != "" {

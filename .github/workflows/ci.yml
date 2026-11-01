@@ -20,5 +20,16 @@ jobs:
         with:
           go-version-file: go/go.mod
       - run: mpv --version | head -1 && ffmpeg -version | head -1
+      # Line length: golines at 100 columns (generated code is skipped).
+      - name: Format check
+        working-directory: go
+        run: |
+          go install github.com/segmentio/golines@v0.15.0
+          files=$("$(go env GOPATH)/bin/golines" -l --ignore-generated -m 100 .)
+          if [ -n "$files" ]; then
+            echo "Not formatted; run: cd go && golines -w --ignore-generated -m 100 ."
+            echo "$files"
+            exit 1
+          fi
       - working-directory: go
         run: go vet ./... && go test ./...

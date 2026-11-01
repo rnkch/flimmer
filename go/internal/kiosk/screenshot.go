@@ -36,7 +36,8 @@ func (s *Service) Screenshot(ctx context.Context) ([]byte, error) {
 	}
 	jpg := png[:len(png)-len(".png")] + ".jpg"
 	defer os.Remove(jpg)
-	out, err := exec.CommandContext(ctx, s.cfg.FFmpeg, "-v", "error", "-y", "-i", png, "-vf", vf, "-q:v", "3", jpg).CombinedOutput()
+	out, err := exec.CommandContext(ctx, s.cfg.FFmpeg, "-v", "error", "-y", "-i", png, "-vf", vf, "-q:v", "3", jpg).
+		CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("screenshot: %v: %s", err, out)
 	}

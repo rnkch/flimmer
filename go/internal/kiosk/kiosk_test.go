@@ -47,7 +47,11 @@ func addN(t *testing.T, s *Service, n int) []db.Media {
 	for i := 0; i < n; i++ {
 		name := string(rune('a'+i)) + ".png"
 		os.WriteFile(filepath.Join(s.cfg.MediaDir, name), []byte("x"), 0o644)
-		m, err := s.addMedia(context.Background(), db.InsertMediaParams{Filename: name, Title: name, Kind: "image", ImageDurationS: 5}, 0)
+		m, err := s.addMedia(
+			context.Background(),
+			db.InsertMediaParams{Filename: name, Title: name, Kind: "image", ImageDurationS: 5},
+			0,
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -108,14 +112,30 @@ func TestVideoFilter(t *testing.T) {
 	for _, c := range cases {
 		vf, ok := videoFilter(c.hdmi, c.w, c.h)
 		if vf != c.vf || ok != c.ok {
-			t.Errorf("videoFilter(%v,%d,%d) = %q,%v want %q,%v", c.hdmi, c.w, c.h, vf, ok, c.vf, c.ok)
+			t.Errorf(
+				"videoFilter(%v,%d,%d) = %q,%v want %q,%v",
+				c.hdmi,
+				c.w,
+				c.h,
+				vf,
+				ok,
+				c.vf,
+				c.ok,
+			)
 		}
 	}
 }
 
 func TestPlaysAsIs(t *testing.T) {
 	h264 := func(w, h int, fps float64, br int) probeInfo {
-		return probeInfo{VideoCodec: "h264", PixFmt: "yuv420p", Width: w, Height: h, FPS: fps, BitRate: br}
+		return probeInfo{
+			VideoCodec: "h264",
+			PixFmt:     "yuv420p",
+			Width:      w,
+			Height:     h,
+			FPS:        fps,
+			BitRate:    br,
+		}
 	}
 	for _, c := range []struct {
 		name string
@@ -174,7 +194,11 @@ func TestPlaylistOpsWithoutPlayer(t *testing.T) {
 	}
 	// caption position 2 inserts in the middle
 	os.WriteFile(filepath.Join(s.cfg.MediaDir, "e.png"), []byte("x"), 0o644)
-	s.addMedia(ctx, db.InsertMediaParams{Filename: "e.png", Title: "e.png", Kind: "image", ImageDurationS: 5}, 2)
+	s.addMedia(
+		ctx,
+		db.InsertMediaParams{Filename: "e.png", Title: "e.png", Kind: "image", ImageDurationS: 5},
+		2,
+	)
 	if got := titles(t, s); !slices.Equal(got, []string{"d.png", "e.png", "c.png", "a.png"}) {
 		t.Fatal(got)
 	}
@@ -204,7 +228,8 @@ func TestSyncWithMpv(t *testing.T) {
 	defer cancel()
 	for _, n := range []string{"a", "b", "c"} {
 		exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=red:s=64x48", "-frames:v", "1",
-			filepath.Join(s.cfg.MediaDir, n+".png")).Run()
+			filepath.Join(s.cfg.MediaDir, n+".png")).
+			Run()
 	}
 	connected := make(chan struct{}, 1)
 	onConnect := p.OnConnect
@@ -229,7 +254,11 @@ func TestSyncWithMpv(t *testing.T) {
 	}
 	var ms []db.Media
 	for _, n := range []string{"a", "b", "c"} {
-		m, err := s.addMedia(ctx, db.InsertMediaParams{Filename: n + ".png", Title: n, Kind: "image", ImageDurationS: 60}, 0)
+		m, err := s.addMedia(
+			ctx,
+			db.InsertMediaParams{Filename: n + ".png", Title: n, Kind: "image", ImageDurationS: 60},
+			0,
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -282,8 +311,10 @@ func TestIngestVideoAndImage(t *testing.T) {
 	vid := filepath.Join(s.cfg.TmpDir, "clip.mp4")
 	img := filepath.Join(s.cfg.TmpDir, "pic.jpg")
 	// MPEG-4 Part 2 doesn't play as it is: converted to H.264, size unchanged.
-	exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=s=400x300:d=3:r=25", "-c:v", "mpeg4", vid).Run()
-	exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=blue:s=320x240", "-frames:v", "1", img).Run()
+	exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=s=400x300:d=3:r=25", "-c:v", "mpeg4", vid).
+		Run()
+	exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=blue:s=320x240", "-frames:v", "1", img).
+		Run()
 
 	// A .mp4 that arrived as a "document" must still be detected as video.
 	jv, _ := s.EnqueueFile(ctx, vid, "clip.mp4", ParseCaption("trailer"))
@@ -294,7 +325,8 @@ func TestIngestVideoAndImage(t *testing.T) {
 	for time.Now().Before(deadline) {
 		a, _ := s.Job(ctx, jv.ID)
 		b, _ := s.Job(ctx, ji.ID)
-		if (a.State == "done" || a.State == "failed") && (b.State == "done" || b.State == "failed") {
+		if (a.State == "done" || a.State == "failed") &&
+			(b.State == "done" || b.State == "failed") {
 			break
 		}
 		time.Sleep(200 * time.Millisecond)
@@ -306,8 +338,11 @@ func TestIngestVideoAndImage(t *testing.T) {
 		}
 	}
 	list, _ := s.List(ctx)
-	if len(list) != 2 || list[0].Title != "plakat" || list[0].Kind != "image" || list[0].ImageDurationS != 12 ||
-		list[1].Kind != "video" || list[1].Width != 400 || list[1].Height != 300 {
+	if len(list) != 2 || list[0].Title != "plakat" || list[0].Kind != "image" ||
+		list[0].ImageDurationS != 12 ||
+		list[1].Kind != "video" ||
+		list[1].Width != 400 ||
+		list[1].Height != 300 {
 		t.Fatalf("%+v", list)
 	}
 	if _, err := os.Stat(vid); !os.IsNotExist(err) {
@@ -325,7 +360,8 @@ func TestIngestVideoNoTranscode(t *testing.T) {
 	defer cancel()
 	// MPEG-4 Part 2 at 400x300 would normally become H.264 at 384x288.
 	vid := filepath.Join(s.cfg.TmpDir, "old.avi")
-	exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=s=400x300:d=2:r=25", "-c:v", "mpeg4", vid).Run()
+	exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=s=400x300:d=2:r=25", "-c:v", "mpeg4", vid).
+		Run()
 	orig, _ := os.ReadFile(vid)
 	j, _ := s.EnqueueFile(ctx, vid, "old.avi", Caption{NoTranscode: true})
 	go s.RunWorker(ctx)
@@ -342,8 +378,17 @@ func TestIngestVideoNoTranscode(t *testing.T) {
 	// The very file, moved: same bytes, same extension, no ffmpeg pass.
 	list, _ := s.List(ctx)
 	got, _ := os.ReadFile(filepath.Join(s.cfg.MediaDir, list[0].Filename))
-	if !bytes.Equal(got, orig) || filepath.Ext(list[0].Filename) != ".avi" || list[0].Width != 400 || list[0].Height != 300 {
-		t.Fatalf("not kept as is: %s, %d bytes (was %d), %dx%d", list[0].Filename, len(got), len(orig), list[0].Width, list[0].Height)
+	if !bytes.Equal(got, orig) || filepath.Ext(list[0].Filename) != ".avi" ||
+		list[0].Width != 400 ||
+		list[0].Height != 300 {
+		t.Fatalf(
+			"not kept as is: %s, %d bytes (was %d), %dx%d",
+			list[0].Filename,
+			len(got),
+			len(orig),
+			list[0].Width,
+			list[0].Height,
+		)
 	}
 }
 
@@ -357,7 +402,8 @@ func TestIngestSurvivesRestart(t *testing.T) {
 	s.cfg.VideoEncoder = "libx264"
 	vid := filepath.Join(s.cfg.TmpDir, "long.avi")
 	// MPEG-4 is always converted; two minutes take a few seconds to encode.
-	exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=s=640x480:d=120:r=25", "-c:v", "mpeg4", vid).Run()
+	exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=s=640x480:d=120:r=25", "-c:v", "mpeg4", vid).
+		Run()
 	j, _ := s.EnqueueFile(context.Background(), vid, "long.avi", Caption{})
 
 	// First run: stop it as soon as the conversion has started.
@@ -370,7 +416,12 @@ func TestIngestSurvivesRestart(t *testing.T) {
 			break
 		}
 		if j.State == "done" || time.Now().After(deadline) {
-			t.Fatalf("conversion not caught while running: %s %s %d%%", j.State, j.Phase, j.Progress)
+			t.Fatalf(
+				"conversion not caught while running: %s %s %d%%",
+				j.State,
+				j.Phase,
+				j.Progress,
+			)
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
@@ -478,7 +529,14 @@ func TestChooseFormats(t *testing.T) {
 	if info, err := chooseFormats("u", live); err != nil || !info.Live || info.Auto == "" {
 		t.Fatalf("live: %+v %v", info, err)
 	}
-	if _, err := (&Service{}).EnqueueURL(context.Background(), "rtsp://cam/live", "b", "", Caption{}, 0); err != ErrLive {
+	if _, err := (&Service{}).EnqueueURL(
+		context.Background(),
+		"rtsp://cam/live",
+		"b",
+		"",
+		Caption{},
+		0,
+	); err != ErrLive {
 		t.Fatalf("download of rtsp: %v", err)
 	}
 }
@@ -495,8 +553,26 @@ func TestDownloadURL(t *testing.T) {
 	s.cfg.VideoEncoder = "libx264"
 	s.cfg.YtDlp = "yt-dlp"
 	dir := t.TempDir()
-	exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=s=640x360:d=2:r=25",
-		"-f", "lavfi", "-i", "sine=d=2", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", filepath.Join(dir, "clip.mp4")).Run()
+	exec.Command(
+		"ffmpeg",
+		"-v",
+		"error",
+		"-y",
+		"-f",
+		"lavfi",
+		"-i",
+		"testsrc=s=640x360:d=2:r=25",
+		"-f",
+		"lavfi",
+		"-i",
+		"sine=d=2",
+		"-pix_fmt",
+		"yuv420p",
+		"-c:a",
+		"aac",
+		"-shortest",
+		filepath.Join(dir, "clip.mp4"),
+	).Run()
 	// Serve the file slowly, in chunks, so the download shows progress.
 	clip, _ := os.ReadFile(filepath.Join(dir, "clip.mp4"))
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -569,7 +645,9 @@ func TestParseProgress(t *testing.T) {
 }
 
 func TestStreamSpec(t *testing.T) {
-	if got := StreamSpec(URLFormat{Spec: "298+140", Height: 720}); got != "298+140/bv*[height<=720][vcodec^=avc1]+ba/b[height<=720]/bv*[height<=720]+ba/b" {
+	if got := StreamSpec(
+		URLFormat{Spec: "298+140", Height: 720},
+	); got != "298+140/bv*[height<=720][vcodec^=avc1]+ba/b[height<=720]/bv*[height<=720]+ba/b" {
 		t.Fatal(got)
 	}
 	if got := StreamSpec(URLFormat{Spec: "b"}); got != "b" {
@@ -585,7 +663,8 @@ func serveClip(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
 	if err := exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=s=640x360:d=4:r=25",
-		"-f", "lavfi", "-i", "sine=d=4", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", filepath.Join(dir, "clip.mp4")).Run(); err != nil {
+		"-f", "lavfi", "-i", "sine=d=4", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", filepath.Join(dir, "clip.mp4")).
+		Run(); err != nil {
 		t.Skip("ffmpeg: ", err)
 	}
 	srv := httptest.NewServer(http.FileServer(http.Dir(dir)))
@@ -611,7 +690,13 @@ func TestStreamEntryWithMpv(t *testing.T) {
 	go p.Run(ctx)
 	<-connected
 
-	m, err := s.AddStream(ctx, URLInfo{URL: clip, Title: "Clip", Duration: 4}, URLFormat{Spec: "b"}, "", 0)
+	m, err := s.AddStream(
+		ctx,
+		URLInfo{URL: clip, Title: "Clip", Duration: 4},
+		URLFormat{Spec: "b"},
+		"",
+		0,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -653,7 +738,13 @@ func TestDownloadInstead(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	addN(t, s, 2)
-	st, err := s.AddStream(ctx, URLInfo{URL: serveClip(t), Title: "Clip", Duration: 4}, URLFormat{Spec: "b"}, "", 2)
+	st, err := s.AddStream(
+		ctx,
+		URLInfo{URL: serveClip(t), Title: "Clip", Duration: 4},
+		URLFormat{Spec: "b"},
+		"",
+		2,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -696,7 +787,11 @@ func TestEntryClockAndImageProgress(t *testing.T) {
 		t.Fatalf("single image repeating: %v/%v", pos, dur)
 	}
 	vid := db.Media{Kind: "video"}
-	if pos, dur := s.Progress(vid, PlayerState{TimePos: 12, Duration: 40, Elapsed: 99}); pos != 12 || dur != 40 {
+	if pos, dur := s.Progress(
+		vid,
+		PlayerState{TimePos: 12, Duration: 40, Elapsed: 99},
+	); pos != 12 ||
+		dur != 40 {
 		t.Fatalf("video uses mpv: %v/%v", pos, dur)
 	}
 }
@@ -711,13 +806,18 @@ func TestImageClockWithMpv(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=red:s=64x48", "-frames:v", "1",
-		filepath.Join(s.cfg.MediaDir, "a.png")).Run()
+		filepath.Join(s.cfg.MediaDir, "a.png")).
+		Run()
 	connected := make(chan struct{}, 1)
 	onConnect := p.OnConnect
 	p.OnConnect = func(ctx context.Context) { onConnect(ctx); connected <- struct{}{} }
 	go p.Run(ctx)
 	<-connected
-	m, err := s.addMedia(ctx, db.InsertMediaParams{Filename: "a.png", Title: "a", Kind: "image", ImageDurationS: 30}, 0)
+	m, err := s.addMedia(
+		ctx,
+		db.InsertMediaParams{Filename: "a.png", Title: "a", Kind: "image", ImageDurationS: 30},
+		0,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -743,13 +843,18 @@ func TestScreenshotWithMpv(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=red:s=64x48", "-frames:v", "1",
-		filepath.Join(s.cfg.MediaDir, "a.png")).Run()
+		filepath.Join(s.cfg.MediaDir, "a.png")).
+		Run()
 	connected := make(chan struct{}, 1)
 	onConnect := p.OnConnect
 	p.OnConnect = func(ctx context.Context) { onConnect(ctx); connected <- struct{}{} }
 	go p.Run(ctx)
 	<-connected
-	if _, err := s.addMedia(ctx, db.InsertMediaParams{Filename: "a.png", Title: "a", Kind: "image", ImageDurationS: 30}, 0); err != nil {
+	if _, err := s.addMedia(
+		ctx,
+		db.InsertMediaParams{Filename: "a.png", Title: "a", Kind: "image", ImageDurationS: 30},
+		0,
+	); err != nil {
 		t.Fatal(err)
 	}
 	time.Sleep(500 * time.Millisecond)
@@ -774,7 +879,8 @@ func TestResetWebPassword(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !regexp.MustCompile(`^[a-hjkmnp-z2-9]{4}-[a-hjkmnp-z2-9]{4}-[a-hjkmnp-z2-9]{4}$`).MatchString(pw) {
+	if !regexp.MustCompile(`^[a-hjkmnp-z2-9]{4}-[a-hjkmnp-z2-9]{4}-[a-hjkmnp-z2-9]{4}$`).
+		MatchString(pw) {
 		t.Fatalf("password %q", pw)
 	}
 	if s.SessionValid(ctx, token) {

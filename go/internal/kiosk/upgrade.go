@@ -138,7 +138,8 @@ func (s *Service) updateAPI() string {
 
 // allowedURL: downloads come over HTTPS (plain HTTP only for a test server).
 func (s *Service) allowedURL(u string) bool {
-	return strings.HasPrefix(u, "https://") || (s.cfg.UpdateAPI != "" && strings.HasPrefix(u, "http://"))
+	return strings.HasPrefix(u, "https://") ||
+		(s.cfg.UpdateAPI != "" && strings.HasPrefix(u, "http://"))
 }
 
 func (s *Service) httpGet(ctx context.Context, url string, accept string) (*http.Response, error) {
@@ -178,7 +179,11 @@ func (s *Service) latestRelease(ctx context.Context, force bool) (ghRelease, err
 	}
 	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
-	resp, err := s.httpGet(ctx, s.updateAPI()+"/repos/"+s.cfg.UpdateRepo+"/releases/latest", "application/vnd.github+json")
+	resp, err := s.httpGet(
+		ctx,
+		s.updateAPI()+"/repos/"+s.cfg.UpdateRepo+"/releases/latest",
+		"application/vnd.github+json",
+	)
 	var he *httpError
 	if errors.As(err, &he) && he.Code == http.StatusNotFound {
 		return ghRelease{}, ErrNoRelease
@@ -188,7 +193,9 @@ func (s *Service) latestRelease(ctx context.Context, force bool) (ghRelease, err
 	}
 	defer resp.Body.Close()
 	var rel ghRelease
-	if err := json.NewDecoder(io.LimitReader(resp.Body, 4<<20)).Decode(&rel); err != nil || rel.Tag == "" {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 4<<20)).
+		Decode(&rel); err != nil ||
+		rel.Tag == "" {
 		return ghRelease{}, fmt.Errorf("unexpected answer from GitHub")
 	}
 	c.rel, c.at = rel, time.Now()
@@ -203,7 +210,13 @@ func (s *Service) CheckUpgrade(ctx context.Context, force bool) (UpgradeInfo, er
 	}
 	cur := Version()
 	_, isRelease := parseVersion(cur)
-	info := UpgradeInfo{Current: cur, Release: isRelease, Latest: rel.Tag, URL: rel.URL, Newer: newerVersion(rel.Tag, cur)}
+	info := UpgradeInfo{
+		Current: cur,
+		Release: isRelease,
+		Latest:  rel.Tag,
+		URL:     rel.URL,
+		Newer:   newerVersion(rel.Tag, cur),
+	}
 	for _, a := range rel.Assets {
 		if a.Name == platformAsset() {
 			info.CanInstall = true
@@ -266,7 +279,12 @@ func (s *Service) Upgrade(ctx context.Context) (UpgradeResult, error) {
 	}
 	out, err := exec.CommandContext(ctx, newPath, "-version").Output()
 	if err != nil || strings.TrimSpace(string(out)) != rel.Tag {
-		return UpgradeResult{}, fmt.Errorf("%w: it reports %q, expected %q", ErrUpgradeCheck, strings.TrimSpace(string(out)), rel.Tag)
+		return UpgradeResult{}, fmt.Errorf(
+			"%w: it reports %q, expected %q",
+			ErrUpgradeCheck,
+			strings.TrimSpace(string(out)),
+			rel.Tag,
+		)
 	}
 
 	// Keep the old binary, mark the upgrade as pending, then swap. Renaming
@@ -290,7 +308,17 @@ func (s *Service) Upgrade(ctx context.Context) (UpgradeResult, error) {
 		s.RestartService(ctx)
 		res.Restarted = true
 	}
-	s.Logf(ctx, slog.LevelInfo, "upgraded", "from", res.From, "to", res.To, "restarted", res.Restarted)
+	s.Logf(
+		ctx,
+		slog.LevelInfo,
+		"upgraded",
+		"from",
+		res.From,
+		"to",
+		res.To,
+		"restarted",
+		res.Restarted,
+	)
 	return res, nil
 }
 
@@ -326,7 +354,10 @@ func (s *Service) downloadRelease(ctx context.Context, rel ghRelease, dst string
 	}
 	want := ""
 	for _, line := range strings.Split(string(sums), "\n") {
-		if f := strings.Fields(line); len(f) == 2 && strings.TrimPrefix(f[1], "*") == platformAsset() {
+		if f := strings.Fields(
+			line,
+		); len(f) == 2 &&
+			strings.TrimPrefix(f[1], "*") == platformAsset() {
 			want = strings.ToLower(f[0])
 		}
 	}
@@ -411,7 +442,15 @@ func (s *Service) CheckPendingUpgrade() (rolledBack bool) {
 			slog.Error("going back to the previous version failed", "err", err)
 			return false
 		}
-		s.Logf(context.Background(), slog.LevelError, "upgrade rolled back: the new version didn't stay up", "bad", p.To, "back_to", p.From)
+		s.Logf(
+			context.Background(),
+			slog.LevelError,
+			"upgrade rolled back: the new version didn't stay up",
+			"bad",
+			p.To,
+			"back_to",
+			p.From,
+		)
 		return true
 	}
 	if err := s.writePending(p); err != nil {

@@ -382,3 +382,147 @@ func TestIconCachingAndAssetVersion(t *testing.T) {
 		t.Errorf("the login page isn't cloaked")
 	}
 }
+
+type sseMessage struct{ event, data string }
+
+// openEvents connects to /events like a page does and returns its messages.
+func openEvents(t *testing.T, s *Server, k *kiosk.Service) <-chan sseMessage {
+	t.Helper()
+	token, err := k.Login(context.Background(), "test-password-123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(s.Handler())
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(func() { cancel(); srv.Close() })
+	req, _ := http.NewRequestWithContext(ctx, "GET", srv.URL+"/events", nil)
+	req.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { resp.Body.Close() })
+	out := make(chan sseMessage, 64)
+	go func() {
+		defer close(out)
+		sc := bufio.NewScanner(resp.Body)
+		sc.Buffer(nil, 1<<20)
+		var m sseMessage
+		for sc.Scan() {
+			switch line := sc.Text(); {
+			case line == "":
+				if m.event != "" || m.data != "" {
+					out <- m
+				}
+				m = sseMessage{}
+			case strings.HasPrefix(line, "event: "):
+				m.event = strings.TrimPrefix(line, "event: ")
+			case strings.HasPrefix(line, "data: "):
+				m.data += strings.TrimPrefix(line, "data: ")
+			}
+		}
+	}()
+	return out
+}
+
+// partials reads messages for up to d and returns which push targets were seen in
+// them (the <hx-partial> targets of unnamed messages) and which named events.
+func partials(msgs <-chan sseMessage, d time.Duration) (targets, events map[string]bool) {
+	targets, events = map[string]bool{}, map[string]bool{}
+	re := regexp.MustCompile(`hx-target="(#[a-z-]+)"`)
+	deadline := time.After(d)
+	for {
+		select {
+		case m, ok := <-msgs:
+			if !ok {
+				return
+			}
+			if m.event != "" {
+				events[m.event] = true
+			}
+			for _, x := range re.FindAllStringSubmatch(m.data, -1) {
+				targets[x[1]] = true
+			}
+		case <-deadline:
+			return
+		}
+	}
+}
+
+// The player card, the playlist and its summary are pushed over the live connection:
+// everything when it opens (events missed while away), then only what an event changed.
+func TestLiveConnectionPushesWhatChanged(t *testing.T) {
+	s, k := newServer(t)
+	msgs := openEvents(t, s, k)
+	card, list, summary := "#player-card", "#playlist", "#playlist-summary"
+
+	first, _ := partials(msgs, 1200*time.Millisecond)
+	for _, want := range []string{card, list, summary} {
+		if !first[want] {
+			t.Errorf("a new connection isn't sent %s (got %v)", want, first)
+		}
+	}
+	for _, c := range []struct {
+		event     kiosk.EventType
+		want, not []string
+	}{
+		{kiosk.EventPlayer, []string{card, list}, []string{summary}}, // the current entry moved
+		{kiosk.EventPlaylist, []string{list, summary}, []string{card}},
+		{kiosk.EventJob, []string{summary}, []string{card, list}}, // jobs in progress
+	} {
+		k.Hub.Publish(kiosk.Event{Type: c.event})
+		got, events := partials(msgs, 2*time.Second)
+		for _, w := range c.want {
+			if !got[w] {
+				t.Errorf("%s: %s not pushed (got %v)", c.event, w, got)
+			}
+		}
+		for _, n := range c.not {
+			if got[n] {
+				t.Errorf("%s: %s pushed although nothing changed there", c.event, n)
+			}
+		}
+		if !events[string(c.event)] { // other parts of the page still listen for the named event
+			t.Errorf("%s: the named event is gone (got %v)", c.event, events)
+		}
+	}
+}
+
+// What is pushed isn't fetched again: no refetch triggers on these three elements, and
+// the GET endpoints (a held-back update is asked for afterwards) render the same elements.
+func TestPlaylistAndPlayerCardAreNotPolled(t *testing.T) {
+	s, k := newServer(t)
+	token, err := k.Login(context.Background(), "test-password-123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	get := func(path string) string {
+		req := httptest.NewRequest("GET", path, nil)
+		req.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
+		rec := httptest.NewRecorder()
+		s.Handler().ServeHTTP(rec, req)
+		if rec.Code != 200 {
+			t.Fatalf("%s: %d", path, rec.Code)
+		}
+		return rec.Body.String()
+	}
+	page := get("/playlist")
+	for _, id := range []string{`id="player-card"`, `id="playlist"`, `id="playlist-summary"`} {
+		if !strings.Contains(page, id) {
+			t.Errorf("the page lacks %s", id)
+		}
+	}
+	for _, url := range []string{"/player/card", "/playlist/list", "/playlist/summary"} {
+		if strings.Contains(page, `hx-get="`+url+`"`) {
+			t.Errorf("the page still fetches %s itself", url)
+		}
+	}
+	for path, id := range map[string]string{
+		"/player/card": `id="player-card"`, "/playlist/list": `id="playlist"`,
+		"/playlist/summary": `id="playlist-summary"`,
+	} {
+		if !strings.Contains(get(path), id) {
+			t.Errorf("%s doesn't render %s", path, id)
+		}
+	}
+}

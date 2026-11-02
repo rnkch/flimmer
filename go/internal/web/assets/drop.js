@@ -1,4 +1,5 @@
 import { files as nFiles, t } from './i18n.js';
+import { refreshPlaylist } from './live.js';
 
 // Drop files from the desktop onto the playlist: they are uploaded and
 // inserted where they were dropped. Row reordering (sortable.js) uses the
@@ -22,7 +23,7 @@ export function initDropUpload() {
     document.querySelectorAll('[data-dropzone].dropping').forEach((z) => z.classList.remove('dropping'));
     document.querySelectorAll('[data-sortable][hx-morph-skip]').forEach((list) => {
       list.removeAttribute('hx-morph-skip');
-      htmx.trigger(document.body, 'playlist');
+      refreshPlaylist();
     });
   }
 

@@ -25,7 +25,7 @@ templ PlaylistPage(p Page, list []db.Media, currentID int64, activeJobs int) {
 }
 
 templ PlaylistSummary(list []db.Media, activeJobs int) {
-	<span id="playlist-summary" class="wa-caption-s num" hx-get="/playlist/summary" hx-trigger="playlist from:body, job from:body" hx-swap="outerHTML">
+	<span id="playlist-summary" class="wa-caption-s num">
 		{ t(ctx, "%d entries", len(list)) }
 		if n := disabledCount(list); n > 0 {
 			({ t(ctx, "%d disabled", n) })
@@ -37,11 +37,11 @@ templ PlaylistSummary(list []db.Media, activeJobs int) {
 	</span>
 }
 
-// PlaylistList reloads itself when the playlist or the playing entry changes
-// anywhere (bot, other tab). Rows being edited carry hx-morph-skip.
+// PlaylistList is pushed over the live connection when the playlist or the playing entry
+// changes anywhere (bot, other tab; handlers.go, events). Rows being edited carry
+// hx-morph-skip, and the list is frozen the same way while a row is dragged.
 templ PlaylistList(list []db.Media, currentID int64) {
-	<ul id="playlist" class="rows playlist" data-sortable
-		hx-get="/playlist/list" hx-trigger="playlist from:body, player from:body" hx-swap="outerMorph">
+	<ul id="playlist" class="rows playlist" data-sortable>
 		if len(list) == 0 {
 			<li class="empty-state">
 				<wa-icon name="film" class="empty-icon"></wa-icon>

@@ -232,23 +232,42 @@ func (s *Server) activeJobs(ctx context.Context) int {
 	return len(jobs)
 }
 
+// The playlist, its summary line and the player card are rendered here for both the GET
+// endpoints (asked for after a held-back update, and by tests) and the live connection,
+// which pushes them as <hx-partial>s (events).
+func (s *Server) playlistListView(ctx context.Context) (templ.Component, error) {
+	list, err := s.k.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	cur, _ := s.current(ctx)
+	return views.PlaylistList(list, cur.ID), nil
+}
+
+func (s *Server) playlistSummaryView(ctx context.Context) (templ.Component, error) {
+	list, err := s.k.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return views.PlaylistSummary(list, s.activeJobs(ctx)), nil
+}
+
 func (s *Server) playlistList(w http.ResponseWriter, r *http.Request) {
-	list, err := s.k.List(r.Context())
+	c, err := s.playlistListView(r.Context())
 	if err != nil {
 		fail(w, r, err)
 		return
 	}
-	cur, _ := s.current(r.Context())
-	render(w, r, views.PlaylistList(list, cur.ID))
+	render(w, r, c)
 }
 
 func (s *Server) playlistSummary(w http.ResponseWriter, r *http.Request) {
-	list, err := s.k.List(r.Context())
+	c, err := s.playlistSummaryView(r.Context())
 	if err != nil {
 		fail(w, r, err)
 		return
 	}
-	render(w, r, views.PlaylistSummary(list, s.activeJobs(r.Context())))
+	render(w, r, c)
 }
 
 // mediaRow renders one playlist row; edit is "", "title" or "duration".
@@ -951,6 +970,35 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 		return send("", b.String())
 	}
 
+	// The player card, the playlist and its summary change with the events below. They are
+	// pushed in one message, so every open page gets them without asking (and the parts
+	// arrive together). A page without these elements ignores them. Everything is sent
+	// once when a connection opens: the page may have missed events while it was away.
+	live := func(card, list, summary bool) bool {
+		var b bytes.Buffer
+		partial := func(target string, c templ.Component, err error) {
+			if err != nil {
+				slog.Warn("live update", "target", target, "err", err)
+				return
+			}
+			fmt.Fprintf(&b, `<hx-partial hx-target="%s" hx-swap="outerMorph">`, target)
+			c.Render(ctx, &b)
+			b.WriteString(`</hx-partial>`)
+		}
+		if card {
+			partial("#player-card", views.PlayerCard(s.nowPlaying(ctx)), nil)
+		}
+		if list {
+			c, err := s.playlistListView(ctx)
+			partial("#playlist", c, err)
+		}
+		if summary {
+			c, err := s.playlistSummaryView(ctx)
+			partial("#playlist-summary", c, err)
+		}
+		return b.Len() == 0 || send("", b.String())
+	}
+
 	// Coalesce bursts (e.g. job progress) into at most one event per type per tick.
 	pending := map[kiosk.EventType]bool{}
 	clock := time.NewTicker(time.Second)
@@ -959,7 +1007,7 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 	defer keepAlive.Stop()
 	// Every connection starts with the boot id: a page that reconnects after a
 	// restart sees another one and reloads (app.js, "boot").
-	if !send("boot", s.boot) {
+	if !send("boot", s.boot) || !live(true, true, true) {
 		return
 	}
 	for {
@@ -975,13 +1023,21 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 			fl.Flush()
 		case <-clock.C:
 			ok := true
+			var card, list, summary bool
 			for t := range pending {
-				if t == kiosk.EventPlayer {
+				switch t {
+				case kiosk.EventPlayer:
 					ok = ok && nowPlaying()
+					card, list = true, true // the current entry moved
+				case kiosk.EventPlaylist:
+					list, summary = true, true
+				case kiosk.EventJob:
+					summary = true // the number of jobs in progress
 				}
 				ok = ok && send(string(t), "1")
 			}
 			clear(pending)
+			ok = ok && live(card, list, summary)
 			// Every second while something plays (videos and images alike).
 			if ps := s.k.PlayerState(); ok && ps.Path != "" && !ps.Pause {
 				ok = nowPlaying()

@@ -1,3 +1,5 @@
+import { refreshPlaylist } from './live.js';
+
 // Drag and drop reordering for the playlist with native HTML drag events.
 // On drop it posts the new 1-based position; the server answers with the
 // updated list, which htmx swaps in. While a row is dragged the list is frozen
@@ -34,7 +36,7 @@ export function initSortable() {
     list.removeAttribute('hx-morph-skip');
     const pos = [...list.children].indexOf(row) + 1;
     if (String(pos) === row.dataset.position) {
-      htmx.trigger(document.body, 'playlist'); // dropped in place: catch up on what was skipped
+      refreshPlaylist(); // dropped in place: catch up on what was skipped
       return;
     }
     htmx.ajax('POST', `/media/${row.dataset.id}/move`, {

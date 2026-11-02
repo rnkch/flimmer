@@ -168,7 +168,7 @@ func PlaylistSummary(list []db.Media, activeJobs int) templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<span id=\"playlist-summary\" class=\"wa-caption-s num\" hx-get=\"/playlist/summary\" hx-trigger=\"playlist from:body, job from:body\" hx-swap=\"outerHTML\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<span id=\"playlist-summary\" class=\"wa-caption-s num\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -244,8 +244,9 @@ func PlaylistSummary(list []db.Media, activeJobs int) templ.Component {
 	})
 }
 
-// PlaylistList reloads itself when the playlist or the playing entry changes
-// anywhere (bot, other tab). Rows being edited carry hx-morph-skip.
+// PlaylistList is pushed over the live connection when the playlist or the playing entry
+// changes anywhere (bot, other tab; handlers.go, events). Rows being edited carry
+// hx-morph-skip, and the list is frozen the same way while a row is dragged.
 func PlaylistList(list []db.Media, currentID int64) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -263,7 +264,7 @@ func PlaylistList(list []db.Media, currentID int64) templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<ul id=\"playlist\" class=\"rows playlist\" data-sortable hx-get=\"/playlist/list\" hx-trigger=\"playlist from:body, player from:body\" hx-swap=\"outerMorph\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<ul id=\"playlist\" class=\"rows playlist\" data-sortable>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

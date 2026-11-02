@@ -114,7 +114,7 @@ func PlayerCard(n NowPlaying) templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div id=\"player-card\" hx-get=\"/player/card\" hx-trigger=\"player from:body\" hx-swap=\"outerMorph\"><div class=\"wa-stack wa-gap-s\"><div class=\"wa-stack wa-gap-3xs\"><span class=\"wa-caption-s\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div id=\"player-card\"><div class=\"wa-stack wa-gap-s\"><div class=\"wa-stack wa-gap-3xs\"><span class=\"wa-caption-s\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

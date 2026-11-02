@@ -45,6 +45,9 @@ func New(token string, groupID int64, k *kiosk.Service) (*Bot, error) {
 		tg.WithDefaultHandler(bt.handle),
 		// One update at a time keeps uploads queued in the order they were sent.
 		tg.WithNotAsyncHandlers(),
+		// No call to Telegram while starting: without a network New would fail, and with it the
+		// whole service (player and web UI included). Polling retries on its own.
+		tg.WithSkipGetMe(),
 		tg.WithErrorsHandler(func(err error) { slog.Error("telegram", "err", err) }),
 	)
 	if err != nil {

@@ -64,3 +64,22 @@ func TestUnprobedPreview(t *testing.T) {
 		t.Error("offers a download or a format choice without format information")
 	}
 }
+
+// Directly played links are looked up again on every pass; the preview warns about the wait.
+func TestDirectPlayWarning(t *testing.T) {
+	render := func(info kiosk.URLInfo) string {
+		var b bytes.Buffer
+		URLPreview(info).Render(context.Background(), &b)
+		return b.String()
+	}
+	web := render(kiosk.URLInfo{URL: "https://www.youtube.com/watch?v=x", Title: "t"})
+	if !strings.Contains(web, "10 bis 30 Sekunden") {
+		t.Error("no warning for a web link")
+	}
+	if strings.Contains(
+		render(kiosk.DirectStreamInfo("rtsp://cam.local/live")),
+		"10 bis 30 Sekunden",
+	) {
+		t.Error("warning for an RTSP stream, which isn't looked up")
+	}
+}

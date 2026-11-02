@@ -74,6 +74,12 @@ templ URLPreview(info kiosk.URLInfo) {
 				{ t(ctx, "Directly: no disk space, needs internet. Download: plays offline.") }
 			}
 		</span>
+		if !kiosk.IsDirectStream(info.URL) {
+			<wa-callout variant="warning" size="s">
+				<wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
+				{ t(ctx, "A link played directly is looked up again every time it comes round in the playlist. On the Pi that can take 10 to 30 seconds, with a black screen meanwhile. Download it for an instant start.") }
+			</wa-callout>
+		}
 	</hx-partial>
 }
 

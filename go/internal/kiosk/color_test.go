@@ -298,3 +298,27 @@ func TestIngestP3Photo(t *testing.T) {
 		t.Fatalf("not converted: %v", px)
 	}
 }
+
+// A 12 MP phone photo is shrunk to screen size on upload.
+func TestIngestShrinksBigPhoto(t *testing.T) {
+	ffmpegOrSkip(t)
+	s, _ := newTestService(t)
+	src := filepath.Join(s.cfg.TmpDir, "big.jpg")
+	if out, err := exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=s=3000x2000",
+		"-frames:v", "1", src).
+		CombinedOutput(); err != nil {
+		t.Fatalf("%v: %s", err, out)
+	}
+	got, _ := probe(context.Background(), "ffprobe", ingestFile(t, s, src, "big.jpg"))
+	if got.Width != 1920 || got.Height != 1280 {
+		t.Fatalf("stored %dx%d, want 1920x1280", got.Width, got.Height)
+	}
+	small := filepath.Join(s.cfg.TmpDir, "small.jpg")
+	exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=s=640x480", "-frames:v", "1", small).
+		Run()
+	s2, _ := newTestService(t)
+	got, _ = probe(context.Background(), "ffprobe", ingestFile(t, s2, small, "small.jpg"))
+	if got.Width != 640 || got.Height != 480 {
+		t.Fatalf("a small photo became %dx%d", got.Width, got.Height)
+	}
+}

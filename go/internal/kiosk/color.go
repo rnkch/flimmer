@@ -3,7 +3,9 @@ package kiosk
 import (
 	"bytes"
 	"compress/zlib"
+	"context"
 	"encoding/binary"
+	"fmt"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -12,6 +14,7 @@ import (
 	"log/slog"
 	"math"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -22,6 +25,50 @@ import (
 // and sRGB are) are understood; anything else stays as it is.
 
 const maxColorPixels = 60_000_000 // a 60 MP picture would need ~250 MB: leave it alone
+
+// maxStillSide is the longest side a stored photo keeps. The screen is 720×576 (1920×1080 on
+// HDMI); a 12 MP original only costs the Pi decoding time and memory.
+const maxStillSide = 1920
+
+// prepareStill makes a photo what Telegram used to deliver: sRGB, upright (the EXIF rotation
+// baked into the pixels, the EXIF data gone) and at most maxStillSide on the long side. On any
+// problem the file stays as it was.
+func (s *Service) prepareStill(ctx context.Context, path string) {
+	s.fixStillColor(path)
+	ext := strings.ToLower(extOf(path))
+	if ext != ".jpg" && ext != ".png" {
+		return
+	}
+	tmp := path + ".tmp" + ext
+	args := []string{
+		"-v",
+		"error",
+		"-y",
+		"-nostdin",
+		"-i",
+		path,
+		"-map_metadata",
+		"-1",
+		"-vf",
+		fmt.Sprintf(
+			"scale='min(%[1]d,iw)':'min(%[1]d,ih)':force_original_aspect_ratio=decrease:flags=lanczos",
+			maxStillSide,
+		),
+	}
+	if ext == ".jpg" {
+		args = append(args, "-q:v", "2")
+	}
+	// ffmpeg turns the picture upright by itself (autorotate) before the filter runs.
+	if out, err := exec.CommandContext(ctx, s.cfg.FFmpeg, append(args, tmp)...).
+		CombinedOutput(); err != nil {
+		slog.Warn("photo not resized", "file", path, "err", err, "out", lastLine(out))
+		os.Remove(tmp)
+		return
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		os.Remove(tmp)
+	}
+}
 
 // fixStillColor rewrites the picture at path as sRGB when its profile says it isn't. It never
 // fails the upload: on any problem the file stays as it was.

@@ -425,7 +425,7 @@ func (s *Service) ingestImage(ctx context.Context, src, ext string) (string, err
 		if err != nil {
 			return "", fmt.Errorf("heif-convert: %v: %s", err, lastLine(out))
 		}
-		s.fixStillColor(filepath.Join(s.cfg.MediaDir, name))
+		s.prepareStill(ctx, filepath.Join(s.cfg.MediaDir, name))
 		return name, nil
 	}
 	switch ext {
@@ -440,7 +440,7 @@ func (s *Service) ingestImage(ctx context.Context, src, ext string) (string, err
 	if err := moveFile(src, dst); err != nil {
 		return name, err
 	}
-	s.fixStillColor(dst)
+	s.prepareStill(ctx, dst)
 	return name, nil
 }
 

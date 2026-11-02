@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rnkch/flimmerkiste/internal/kiosk"
 	"github.com/rnkch/flimmerkiste/internal/sysinfo"
 )
 
@@ -42,5 +43,24 @@ func TestThrottleState(t *testing.T) {
 				t.Errorf("%s: unexpected %q in\n%s", c.raw, n, cpu)
 			}
 		}
+	}
+}
+
+// A link yt-dlp can't analyse still gets a preview: a warning and "play directly" only.
+func TestUnprobedPreview(t *testing.T) {
+	info := kiosk.UnprobedInfo(
+		"https://www.arte.tv/de/videos/1/x/",
+		&kiosk.ProbeError{Msg: "ERROR: No video formats found!"},
+	)
+	var b bytes.Buffer
+	URLPreview(info).Render(context.Background(), &b)
+	html := b.String()
+	for _, w := range []string{"Keine Formatinformationen", "No video formats found", "Direkt abspielen", "sicheren Grenze"} {
+		if !strings.Contains(html, w) {
+			t.Errorf("missing %q", w)
+		}
+	}
+	if strings.Contains(html, `"mode": "download"`) || strings.Contains(html, `name="format"`) {
+		t.Error("offers a download or a format choice without format information")
 	}
 }

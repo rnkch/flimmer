@@ -1146,6 +1146,11 @@ func (s *Server) urlCheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	info, err := s.k.ProbeURL(r.Context(), u)
+	var pe *kiosk.ProbeError
+	if errors.As(err, &pe) { // yt-dlp can't list formats, mpv might still play it
+		render(w, r, views.URLPreview(kiosk.UnprobedInfo(u, pe)))
+		return
+	}
 	if err != nil {
 		fail(w, r, err)
 		return

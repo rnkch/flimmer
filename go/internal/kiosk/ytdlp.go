@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"net/url"
 	"os/exec"
 	"path/filepath"
 	"sort"
@@ -36,6 +37,22 @@ type URLInfo struct {
 	Live      bool        // can only be played directly, not downloaded
 	Formats   []URLFormat // video formats, lowest resolution first
 	Auto      string      // Spec of the format chosen for the CRT
+	Unprobed  string      // yt-dlp's complaint when it couldn't list formats; the link may still play
+}
+
+// ProbeError is yt-dlp failing to analyse a URL. mpv's own yt-dlp hook often still manages, so
+// the UI offers to play such a link anyway.
+type ProbeError struct{ Msg string }
+
+func (e *ProbeError) Error() string { return "yt-dlp: " + e.Msg }
+
+// UnprobedInfo describes a link yt-dlp couldn't analyse: no formats, play directly only.
+func UnprobedInfo(u string, e *ProbeError) URLInfo {
+	title := u
+	if p, err := url.Parse(u); err == nil {
+		title = p.Host + p.Path
+	}
+	return URLInfo{URL: u, Title: title, Site: "?", Live: true, Unprobed: e.Msg}
 }
 
 // Format returns the format with the given spec (the automatic one if spec is empty).
@@ -105,7 +122,7 @@ func (s *Service) ProbeURL(ctx context.Context, url string) (URLInfo, error) {
 	if err != nil {
 		var ee *exec.ExitError
 		if errors.As(err, &ee) {
-			return URLInfo{}, fmt.Errorf("yt-dlp: %s", lastLine(ee.Stderr))
+			return URLInfo{}, &ProbeError{Msg: lastLine(ee.Stderr)}
 		}
 		return URLInfo{}, fmt.Errorf("yt-dlp: %w", err)
 	}

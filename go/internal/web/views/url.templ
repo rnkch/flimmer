@@ -35,7 +35,14 @@ templ URLPreview(info kiosk.URLInfo) {
 						}
 					</div>
 				</div>
-				if len(info.Formats) > 1 || (len(info.Formats) == 1 && info.Formats[0].Height > 0) {
+				if info.Unprobed != "" {
+					<wa-callout variant="warning" size="s">
+						<wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
+						{ t(ctx, "No format information found. You can still try to play it directly, but the Pi might be overloaded.") }
+						<div class="wa-caption-xs">{ info.Unprobed }</div>
+						<div class="wa-caption-xs"><a href="/system" { pageLink("/system")... }>{ t(ctx, "An outdated yt-dlp is a common cause: update it on the System page.") }</a></div>
+					</wa-callout>
+				} else if len(info.Formats) > 1 || (len(info.Formats) == 1 && info.Formats[0].Height > 0) {
 					@formatSelect(info, info.Auto)
 				} else if len(info.Formats) == 1 {
 					<input type="hidden" name="format" value={ formatValue(info, info.Auto) }/>
@@ -53,7 +60,9 @@ templ URLPreview(info kiosk.URLInfo) {
 			</wa-button>
 		}
 		<span class="wa-caption-xs">
-			if info.Live {
+			if info.Unprobed != "" {
+				{ t(ctx, "Without format information it plays with a safe limit (720 lines, 30 fps).") }
+			} else if info.Live {
 				{ t(ctx, "Live streams play directly and never end on their own.") }
 			} else {
 				{ t(ctx, "Directly: no disk space, needs internet. Download: plays offline.") }

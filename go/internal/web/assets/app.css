@@ -692,3 +692,20 @@ wa-dialog.preview img {
 .wifi .signal.fair { color: var(--wa-color-warning-on-quiet); }
 .wifi .signal.weak { color: var(--wa-color-danger-on-quiet); }
 .wifi .signal.none { color: var(--wa-color-text-quiet); opacity: 0.5; }
+
+/* --- footer: a quiet link on the page background --- */
+.site-footer {
+  display: flex;
+  justify-content: center;
+  padding: var(--wa-space-l) var(--wa-space-m);
+}
+.site-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wa-space-2xs);
+  color: var(--wa-color-text-quiet);
+  text-decoration: none;
+}
+.site-footer a:hover {
+  color: var(--wa-color-text-link);
+}

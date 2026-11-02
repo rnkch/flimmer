@@ -749,3 +749,14 @@ func TestColourChangeIsPushedToOpenPages(t *testing.T) {
 		t.Errorf("the pushed tab icon lacks %s:\n%s", want, favicon)
 	}
 }
+
+// Every page ends with a link to the project, on the page background.
+func TestFooterLinksToGitHub(t *testing.T) {
+	s, _ := newServer(t)
+	rec := httptest.NewRecorder()
+	s.Handler().ServeHTTP(rec, httptest.NewRequest("GET", "/login", nil))
+	if body := rec.Body.String(); !strings.Contains(body, `<footer class="site-footer`) ||
+		!strings.Contains(body, `href="https://github.com/rnkch/flimmerkiste"`) {
+		t.Fatal("no footer with the GitHub link on the login page")
+	}
+}

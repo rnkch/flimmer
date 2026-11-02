@@ -135,7 +135,8 @@ func TestIngestHDRVideo(t *testing.T) {
 	vid := filepath.Join(s.cfg.TmpDir, "hlg.mp4")
 	if out, err := exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=s=640x360:d=1:r=25",
 		"-c:v", "libx264", "-pix_fmt", "yuv420p", "-color_primaries", "bt2020", "-color_trc", "arib-std-b67",
-		"-colorspace", "bt2020nc", vid).
+		"-colorspace", "bt2020nc",
+		"-x264-params", "colorprim=bt2020:transfer=arib-std-b67:colormatrix=bt2020nc", vid).
 		CombinedOutput(); err != nil {
 		t.Fatalf("%v: %s", err, out)
 	}

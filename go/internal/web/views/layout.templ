@@ -11,6 +11,12 @@ templ head(title, css, js string) {
 	<meta charset="utf-8"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
 	<meta name="asset-version" content={ assetVersion(js) }/>
+	<!-- Home screen: the manifest and icons are public (fetched without cookies). The
+	     colour is the dark scheme's background; the light one is Tokyo Night Day's. -->
+	<link rel="manifest" href="/manifest.webmanifest"/>
+	<link rel="apple-touch-icon" href="/static/pwa/apple-touch-icon.png"/>
+	<meta name="theme-color" content="#1a1b26" media="(prefers-color-scheme: dark)"/>
+	<meta name="theme-color" content="#e1e2e7" media="(prefers-color-scheme: light)"/>
 	<meta name="htmx-config" content='{"extensions": "sse, alpine-compat, keep-overlays"}'/>
 	<title>{ title } · Flimmerkiste</title>
 	<!-- Follow the OS color scheme before first paint (theme.css has both). -->

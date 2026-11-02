@@ -71,6 +71,19 @@ to reach a device whose Wi-Fi is gone.
 service and the boot files (composite PAL by default, HDMI when
 `~/.needs-hdmi` exists on the Pi) and restarts flimmerkiste.
 
+## Home screen (PWA)
+
+Every page links a web app manifest (`/manifest.webmanifest`, public) and home-screen icons,
+so a browser *can* offer to put the remote on a home screen as an app of its own. The app is
+named after the kiosk, so several kiosks stay apart on one phone. There is deliberately no
+service worker: the page is a remote for a screen on the same network, nothing in it works
+offline, and cached files would get in the way of the self-upgrade.
+
+Browsers only install a page as an app from a trusted HTTPS origin. flimmerkiste's own
+address (`https://<LAN address>:8443`) uses a self-signed certificate, so expect a plain
+shortcut instead, or nothing; this hasn't been tried on real phones yet. The icons are made
+by `go/internal/web/cmd/pwaicons/generate.sh` from the header's `tv` glyph.
+
 ## Releases and upgrades
 
 A release is a Git tag. Pushing one builds the binaries and publishes them

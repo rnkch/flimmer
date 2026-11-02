@@ -35,6 +35,7 @@ type Server struct {
 	certs  *access.Certs // nil without HTTPS
 	bundle bundle.Result
 	icons  fs.FS
+	pwa    fs.FS
 
 	// boot is new on every start. Every response carries it (X-Boot) and every live
 	// connection (/events) opens with it, so a page can tell that the server has
@@ -62,12 +63,13 @@ func New(k *kiosk.Service, certs *access.Certs) (*Server, error) {
 		time.Since(start).Round(time.Millisecond),
 	)
 	icons, _ := fs.Sub(files, "vendor/icons")
+	pwa, _ := fs.Sub(files, "assets/pwa")
 	id := make([]byte, 8)
 	if _, err := rand.Read(id); err != nil {
 		return nil, err
 	}
 	return &Server{
-		k: k, certs: certs, bundle: res, icons: icons, boot: hex.EncodeToString(id),
+		k: k, certs: certs, bundle: res, icons: icons, pwa: pwa, boot: hex.EncodeToString(id),
 	}, nil
 }
 
@@ -78,6 +80,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /static/{name}", s.static)
 	mux.HandleFunc("POST /lang", s.setLang)
 	mux.HandleFunc("GET /static/icons/{name}", s.icon)
+	// The web app manifest and its icons are fetched by the browser without cookies,
+	// so they are public (like /static).
+	mux.HandleFunc("GET /manifest.webmanifest", s.manifest)
+	mux.HandleFunc("GET /static/pwa/{name}", s.pwaIcon)
 
 	app := http.NewServeMux()
 	app.HandleFunc("POST /logout", s.logout)

@@ -3,7 +3,9 @@ package web
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
+	"image/png"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -523,6 +525,99 @@ func TestPlaylistAndPlayerCardAreNotPolled(t *testing.T) {
 	} {
 		if !strings.Contains(get(path), id) {
 			t.Errorf("%s doesn't render %s", path, id)
+		}
+	}
+}
+
+// The home-screen manifest and its icons are public (a browser fetches them without
+// cookies), carry the kiosk's own name, and every icon is a PNG of the size it claims.
+func TestManifestAndHomeScreenIcons(t *testing.T) {
+	s, k := newServer(t)
+	if err := k.SetDisplayName(context.Background(), "Foyer Kino 2"); err != nil {
+		t.Fatal(err)
+	}
+	get := func(path string) *httptest.ResponseRecorder { // no cookie: not logged in
+		rec := httptest.NewRecorder()
+		s.Handler().ServeHTTP(rec, httptest.NewRequest("GET", path, nil))
+		return rec
+	}
+
+	rec := get("/manifest.webmanifest")
+	if rec.Code != 200 ||
+		!strings.HasPrefix(rec.Header().Get("Content-Type"), "application/manifest+json") {
+		t.Fatalf("manifest: %d %q (it must be public)", rec.Code, rec.Header().Get("Content-Type"))
+	}
+	var m struct {
+		Name            string `json:"name"`
+		ShortName       string `json:"short_name"`
+		StartURL        string `json:"start_url"`
+		Scope           string `json:"scope"`
+		Display         string `json:"display"`
+		ThemeColor      string `json:"theme_color"`
+		BackgroundColor string `json:"background_color"`
+		Icons           []struct {
+			Src     string `json:"src"`
+			Sizes   string `json:"sizes"`
+			Type    string `json:"type"`
+			Purpose string `json:"purpose"`
+		} `json:"icons"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &m); err != nil {
+		t.Fatal(err)
+	}
+	if m.Name != "Flimmerkiste · Foyer Kino 2" || m.ShortName != "Foyer Kino 2" ||
+		m.StartURL != "/playlist" || m.Scope != "/" || m.Display != "standalone" ||
+		m.ThemeColor != "#1a1b26" || m.BackgroundColor != "#1a1b26" {
+		t.Errorf("manifest: %+v", m)
+	}
+	var have192, have512, haveMaskable bool
+	for _, ic := range m.Icons {
+		img := get(ic.Src)
+		if img.Code != 200 || img.Header().Get("Content-Type") != "image/png" {
+			t.Errorf("icon %s: %d %q", ic.Src, img.Code, img.Header().Get("Content-Type"))
+			continue
+		}
+		cfg, err := png.DecodeConfig(img.Body)
+		if err != nil {
+			t.Errorf("icon %s isn't a PNG: %v", ic.Src, err)
+			continue
+		}
+		if want := fmt.Sprintf(
+			"%dx%d",
+			cfg.Width,
+			cfg.Height,
+		); ic.Sizes != want ||
+			cfg.Width != cfg.Height {
+			t.Errorf("icon %s claims %s but is %s", ic.Src, ic.Sizes, want)
+		}
+		have192 = have192 || cfg.Width == 192
+		have512 = have512 || cfg.Width == 512 && ic.Purpose != "maskable"
+		haveMaskable = haveMaskable || ic.Purpose == "maskable"
+	}
+	if !have192 || !have512 || !haveMaskable {
+		t.Errorf(
+			"icons: 192 %v, 512 %v, maskable %v (Chrome needs 192 and 512)",
+			have192,
+			have512,
+			haveMaskable,
+		)
+	}
+	if rec := get("/static/pwa/nope.png"); rec.Code != 404 {
+		t.Errorf("an unknown icon: %d", rec.Code)
+	}
+	if rec := get("/static/pwa/apple-touch-icon.png"); rec.Code != 200 {
+		t.Errorf("apple-touch-icon: %d", rec.Code)
+	}
+
+	// Every page, the login page included, points at them.
+	body := get("/login").Body.String()
+	for _, want := range []string{
+		`rel="manifest" href="/manifest.webmanifest"`, `rel="apple-touch-icon"`,
+		`name="theme-color" content="#1a1b26" media="(prefers-color-scheme: dark)"`,
+		`name="theme-color" content="#e1e2e7" media="(prefers-color-scheme: light)"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("the page head lacks %s", want)
 		}
 	}
 }

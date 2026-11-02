@@ -661,6 +661,57 @@ func (s *Server) playerAction(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// pwaThemeColor is the Tokyo Night "bg" of the dark scheme (assets/tokyonight.css), for the
+// manifest and the browser's address bar.
+const pwaThemeColor = "#1a1b26"
+
+// manifest is the web app manifest: what a browser needs to put the page on a home screen
+// as an app of its own (standalone, no address bar). The name is the kiosk's own, so
+// several kiosks installed on one phone can be told apart. There is no service worker:
+// the page is a remote for a screen that's on the same network, and nothing in it would
+// work offline. Browsers only offer a real installation on a trusted HTTPS origin; on the
+// self-signed local address most will offer a plain shortcut (see the README).
+func (s *Server) manifest(w http.ResponseWriter, r *http.Request) {
+	name := s.k.DisplayName(r.Context())
+	short := []rune(name)
+	if len(short) > 12 { // browsers show short_name under the icon
+		short = short[:12]
+	}
+	icon := func(file, size, purpose string) map[string]string {
+		m := map[string]string{
+			"src": "/static/pwa/" + file, "sizes": size + "x" + size, "type": "image/png",
+		}
+		if purpose != "" {
+			m["purpose"] = purpose
+		}
+		return m
+	}
+	w.Header().Set("Content-Type", "application/manifest+json")
+	w.Header().Set("Cache-Control", "no-cache") // the name can be changed
+	json.NewEncoder(w).Encode(map[string]any{
+		"id":               "/",
+		"name":             "Flimmerkiste · " + name,
+		"short_name":       string(short),
+		"description":      "Remote control for a looping display",
+		"start_url":        "/playlist",
+		"scope":            "/",
+		"display":          "standalone",
+		"background_color": pwaThemeColor,
+		"theme_color":      pwaThemeColor,
+		"icons": []map[string]string{
+			icon("icon-192.png", "192", "any"),
+			icon("icon-512.png", "512", "any"),
+			icon("icon-maskable-512.png", "512", "maskable"),
+		},
+	})
+}
+
+// pwaIcon serves the home-screen icons (assets/pwa, made by cmd/pwaicons/generate.sh).
+func (s *Server) pwaIcon(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	http.ServeFileFS(w, r, s.pwa, r.PathValue("name"))
+}
+
 // qrPNG is the access QR code as an image (System page).
 func (s *Server) qrPNG(w http.ResponseWriter, r *http.Request) {
 	url := s.k.AccessURL()

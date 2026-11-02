@@ -46,19 +46,26 @@ func DirectStreamInfo(u string) URLInfo {
 
 // StreamSpec turns a chosen format into the spec stored with a stream entry:
 // the exact format first, then H.264 at the same height, then anything up to
-// that height, then the best available, so the entry keeps playing when a
-// site drops one format.
+// that height, so the entry keeps playing when a site drops one format. The
+// fallbacks stay within what the Pi can play (30 frames, 720 lines when the height is
+// unknown) and end at the worst format, never at the best: a live stream whose formats
+// weren't listed used to come out as 1080p60, which is too much. (`<=?` lets a format
+// without that information through.)
 func StreamSpec(f URLFormat) string {
+	const maxFPS, unknownHeight = 30, 720
 	if f.Spec == "" || f.Spec == "b" || f.Height == 0 {
-		return "b"
+		return fmt.Sprintf(
+			"bv*[height<=?%[1]d][fps<=?%[2]d][vcodec^=avc1]+ba/b[height<=?%[1]d][fps<=?%[2]d]/w",
+			unknownHeight,
+			maxFPS,
+		)
 	}
 	h := f.Height
 	return fmt.Sprintf(
-		"%s/bv*[height<=%d][vcodec^=avc1]+ba/b[height<=%d]/bv*[height<=%d]+ba/b",
+		"%[1]s/bv*[height<=%[2]d][fps<=?%[3]d][vcodec^=avc1]+ba/b[height<=%[2]d][fps<=?%[3]d]/bv*[height<=%[2]d]+ba/w",
 		f.Spec,
 		h,
-		h,
-		h,
+		maxFPS,
 	)
 }
 

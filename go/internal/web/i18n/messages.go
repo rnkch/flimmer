@@ -118,6 +118,7 @@ var german = map[string]string{
 	"Live":          "Live",
 	"Live streams play directly and never end on their own.":            "Livestreams laufen direkt und enden nie von selbst.",
 	"Directly: no disk space, needs internet. Download: plays offline.": "Direkt: kein Speicherplatz, braucht Internet. Herunterladen: läuft offline.",
+	"may be too much for the Pi":                                        "evtl. zu viel für den Pi",
 	"no hardware decoding on the Pi":                                    "keine Hardware-Dekodierung auf dem Pi",
 	"Please enter an http(s), rtsp, rtmp, srt or udp link":              "Bitte einen http(s)-, rtsp-, rtmp-, srt- oder udp-Link eingeben",
 	"Live streams can't be downloaded; play them directly":              "Livestreams lassen sich nicht herunterladen; direkt abspielen",

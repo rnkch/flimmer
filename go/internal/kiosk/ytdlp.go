@@ -64,6 +64,13 @@ type URLFormat struct {
 
 func (f URLFormat) Auto(info URLInfo) bool { return f.Spec == info.Auto }
 
+// Heavy reports a format that is too much for a Raspberry Pi 3: above 1080 lines, 1080p at more
+// than 30 frames (the hardware decoder manages 1080p30), or software decoding of anything bigger
+// than SD. It is never chosen automatically; the list says so.
+func (f URLFormat) Heavy() bool {
+	return f.Height > 1080 || (f.Height > 720 && f.FPS > 30) || (f.Slow && f.Height > 480)
+}
+
 type ytFormat struct {
 	ID             string  `json:"format_id"`
 	Ext            string  `json:"ext"`
@@ -221,7 +228,7 @@ func chooseFormats(url string, yi ytInfo) (URLInfo, error) {
 	pick := func(fast bool) string {
 		var largest string
 		for _, f := range info.Formats { // sorted: height asc, then fps asc
-			if f.Slow == fast {
+			if f.Slow == fast || f.Heavy() {
 				continue
 			}
 			if f.Height >= 576 {
@@ -233,6 +240,9 @@ func chooseFormats(url string, yi ytInfo) (URLInfo, error) {
 	}
 	if info.Auto = pick(true); info.Auto == "" {
 		info.Auto = pick(false)
+	}
+	if info.Auto == "" { // everything is heavy: take the smallest
+		info.Auto = info.Formats[0].Spec
 	}
 	return info, nil
 }

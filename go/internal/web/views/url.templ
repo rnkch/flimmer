@@ -69,6 +69,8 @@ templ formatSelect(info kiosk.URLInfo, selected string) {
 				{ formatLabel(ctx, f) }
 				if f.Auto(info) {
 					<wa-tag slot="end" size="xs" variant="brand">{ t(ctx, "best for the CRT") }</wa-tag>
+				} else if f.Heavy() {
+					<span slot="end" class="wa-caption-xs">{ t(ctx, "may be too much for the Pi") }</span>
 				} else if f.Slow {
 					<span slot="end" class="wa-caption-xs">{ t(ctx, "no hardware decoding on the Pi") }</span>
 				}

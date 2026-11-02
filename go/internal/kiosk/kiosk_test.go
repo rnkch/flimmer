@@ -647,11 +647,25 @@ func TestParseProgress(t *testing.T) {
 func TestStreamSpec(t *testing.T) {
 	if got := StreamSpec(
 		URLFormat{Spec: "298+140", Height: 720},
-	); got != "298+140/bv*[height<=720][vcodec^=avc1]+ba/b[height<=720]/bv*[height<=720]+ba/b" {
+	); got != "298+140/bv*[height<=720][fps<=?30][vcodec^=avc1]+ba/b[height<=720][fps<=?30]/bv*[height<=720]+ba/w" {
 		t.Fatal(got)
 	}
-	if got := StreamSpec(URLFormat{Spec: "b"}); got != "b" {
+	// Unknown format: capped, never the plain best (1080p60 live streams were too much).
+	if got := StreamSpec(URLFormat{Spec: "b"}); strings.HasSuffix(got, "/b") ||
+		!strings.Contains(got, "height<=?720") || !strings.Contains(got, "fps<=?30") {
 		t.Fatal(got)
+	}
+	for f, heavy := range map[URLFormat]bool{
+		{Height: 1080, FPS: 60, Codec: "H.264"}:          true,
+		{Height: 1080, FPS: 30, Codec: "H.264"}:          false,
+		{Height: 720, FPS: 60, Codec: "H.264"}:           false,
+		{Height: 2160, FPS: 30, Codec: "H.264"}:          true,
+		{Height: 720, FPS: 30, Codec: "VP9", Slow: true}: true,
+		{Height: 360, FPS: 30, Codec: "VP9", Slow: true}: false,
+	} {
+		if f.Heavy() != heavy {
+			t.Errorf("%+v: Heavy() = %v", f, f.Heavy())
+		}
 	}
 	if !IsDirectStream("rtsp://cam.local/live") || IsDirectStream("https://x") {
 		t.Fatal("IsDirectStream")
@@ -891,5 +905,26 @@ func TestResetWebPassword(t *testing.T) {
 	}
 	if other, _ := s.ResetWebPassword(ctx); other == pw {
 		t.Fatal("same password twice")
+	}
+}
+
+// The automatic choice never lands on a format the Pi can't play: only 1080p60 and 4K on offer
+// means the smallest of them, and with a lighter one around that one wins.
+func TestChooseFormatsAvoidsHeavy(t *testing.T) {
+	f := func(id string, h int, fps float64) ytFormat {
+		return ytFormat{ID: id, VCodec: "avc1.640028", ACodec: "mp4a.40.2", Height: h, FPS: fps}
+	}
+	info, err := chooseFormats(
+		"https://x",
+		ytInfo{Formats: []ytFormat{f("a", 1080, 60), f("b", 2160, 30)}},
+	)
+	if err != nil || info.Auto != "a" {
+		t.Fatalf("auto = %q, %v", info.Auto, err)
+	}
+	info, _ = chooseFormats("https://x", ytInfo{
+		Formats: []ytFormat{f("a", 1080, 60), f("b", 1080, 30), f("c", 720, 60)},
+	})
+	if info.Auto != "c" && info.Auto != "b" || info.Auto == "a" {
+		t.Fatalf("auto = %q, want a light format", info.Auto)
 	}
 }

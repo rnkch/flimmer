@@ -88,15 +88,25 @@ templ SystemStats(si sysinfo.Info, mediaBytes int64) {
 // throttleState says only what someone can act on: a weak power supply (now
 // or since boot) and running slower right now. Having been warm earlier is
 // normal under load and not shown (the Telegram /status has it).
+//
+// The tags sit at the top right of the card, next to its label, so the card never changes height
+// (and the grid doesn't jump) when one appears; they are short, the full text is the tooltip.
 templ throttleState(si sysinfo.Info) {
-	switch {
-		case si.UnderVoltageNow():
-			<wa-tag size="xs" variant="danger">{ t(ctx, "Power supply too weak – check the power adapter") }</wa-tag>
-		case si.UnderVoltageEarlier():
-			<wa-tag size="xs" variant="danger" appearance="outlined">{ t(ctx, "Power supply was too weak – check the power adapter") }</wa-tag>
-	}
-	if si.SlowedNow() {
-		<wa-tag size="xs" variant="warning">{ t(ctx, "Running a bit slower right now (warm)") }</wa-tag>
+	if si.UnderVoltageNow() || si.UnderVoltageEarlier() || si.SlowedNow() {
+		<span class="stat-badges">
+			switch {
+				case si.UnderVoltageNow():
+					<wa-tag id="tag-power" size="xs" variant="danger">{ t(ctx, "Weak power") }</wa-tag>
+					<wa-tooltip for="tag-power">{ t(ctx, "Power supply too weak – check the power adapter") }</wa-tooltip>
+				case si.UnderVoltageEarlier():
+					<wa-tag id="tag-power" size="xs" variant="danger" appearance="outlined">{ t(ctx, "Weak power") }</wa-tag>
+					<wa-tooltip for="tag-power">{ t(ctx, "Power supply was too weak – check the power adapter") }</wa-tooltip>
+			}
+			if si.SlowedNow() {
+				<wa-tag id="tag-slow" size="xs" variant="warning">{ t(ctx, "Slowed") }</wa-tag>
+				<wa-tooltip for="tag-slow">{ t(ctx, "Running a bit slower right now (warm)") }</wa-tooltip>
+			}
+		</span>
 	}
 }
 

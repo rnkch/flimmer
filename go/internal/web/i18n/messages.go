@@ -144,6 +144,8 @@ var german = map[string]string{
 	"Next":                      "Weiter",
 	"Pause / resume":            "Pause / Fortsetzen",
 	"Back to playlist":          "Zurück zur Playlist",
+	"Weak power":                "Netzteil schwach",
+	"Slowed":                    "Gedrosselt",
 	"Subtitles":                 "Untertitel",
 	"Next subtitle track / off": "Nächste Untertitelspur / aus",
 	"This has no subtitles.":    "Hier gibt es keine Untertitel.",

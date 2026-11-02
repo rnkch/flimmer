@@ -633,6 +633,16 @@ wa-dialog.preview img {
 
 .stat {
   font-variant-numeric: tabular-nums;
+  position: relative;
+}
+
+/* Status tags at the top right of a stat card: out of the flow, so the card keeps its height. */
+.stat-badges {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: var(--wa-space-2xs);
 }
 
 .log > div {

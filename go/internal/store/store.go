@@ -33,7 +33,7 @@ func Open(ctx context.Context, path string) (*Store, error) {
 		return nil, err
 	}
 	// SQLite allows one writer at a time; a single connection avoids SQLITE_BUSY
-	// between goroutines and is plenty for a kiosk.
+	// between goroutines and is plenty for a single display.
 	conn.SetMaxOpenConns(1)
 	if err := migrate(ctx, conn); err != nil {
 		conn.Close()

@@ -27,9 +27,9 @@ func huePalette(fsys fs.FS) map[string]string {
 	return out
 }
 
-// kioskColor is the colour of this kiosk's name in the header (the chosen one, else from a hash
+// nameColor is the colour of this display's name in the header (the chosen one, else from a hash
 // of the name), as a hex value.
-func (s *Server) kioskColor(ctx context.Context) string {
+func (s *Server) nameColor(ctx context.Context) string {
 	hue := s.k.DisplayHue(ctx)
 	if hue == "" {
 		hue = kiosk.HashHue(s.k.DisplayName(ctx))
@@ -43,10 +43,10 @@ func (s *Server) kioskColor(ctx context.Context) string {
 // faviconHref is the favicon's address for a page. The colour is in it so that a browser,
 // which keeps favicons for long, fetches a new one after the colour was changed.
 func (s *Server) faviconHref(ctx context.Context) string {
-	return "/favicon.svg?c=" + strings.TrimPrefix(s.kioskColor(ctx), "#")
+	return "/favicon.svg?c=" + strings.TrimPrefix(s.nameColor(ctx), "#")
 }
 
-// favicon is the app's icon with the frame in the kiosk's colour (public: browsers fetch it
+// favicon is the app's icon with the frame in the display's colour (public: browsers fetch it
 // without cookies).
 func (s *Server) favicon(w http.ResponseWriter, r *http.Request) {
 	svg, err := fs.ReadFile(s.pwa, "icon.svg")
@@ -56,7 +56,7 @@ func (s *Server) favicon(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "image/svg+xml")
 	w.Header().Set("Cache-Control", "no-cache") // the colour can be changed
-	w.Write([]byte(strings.ReplaceAll(string(svg), "currentColor", s.kioskColor(r.Context()))))
+	w.Write([]byte(strings.ReplaceAll(string(svg), "currentColor", s.nameColor(r.Context()))))
 }
 
 // faviconICO answers the /favicon.ico every browser asks for by habit (and clients that don't

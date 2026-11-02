@@ -3,7 +3,7 @@
 // The screen is the 4:3 part; the frame around it is not.
 //
 //	icon.svg          the frame in currentColor: the header and login page colour it like the
-//	                  kiosk's name, and the server fills in the colour for the favicon
+//	                  display name, and the server fills in the colour for the favicon
 //	favicon-32.png    transparent, the frame in Tokyo Night's blue (the fallback favicon)
 //	icon-*.png, apple-touch-icon.png
 //	                  home-screen icons: blue on the night background

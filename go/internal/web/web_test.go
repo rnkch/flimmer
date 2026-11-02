@@ -535,7 +535,7 @@ func TestPlaylistAndPlayerCardAreNotPolled(t *testing.T) {
 }
 
 // The home-screen manifest and its icons are public (a browser fetches them without
-// cookies), carry the kiosk's own name, and every icon is a PNG of the size it claims.
+// cookies), carry the display's own name, and every icon is a PNG of the size it claims.
 func TestManifestAndHomeScreenIcons(t *testing.T) {
 	s, k := newServer(t)
 	if err := k.SetDisplayName(context.Background(), "Foyer Kino 2"); err != nil {
@@ -627,10 +627,10 @@ func TestManifestAndHomeScreenIcons(t *testing.T) {
 	}
 }
 
-// The favicon is the app's icon with the frame in the kiosk's colour, public like the other
+// The favicon is the app's icon with the frame in the display's colour, public like the other
 // icons; the header and the login page use the same icon (currentColor, so it takes the
 // colour of the name).
-func TestFaviconAndHeaderIconFollowTheKioskColor(t *testing.T) {
+func TestFaviconAndHeaderIconFollowTheNameColor(t *testing.T) {
 	s, k := newServer(t)
 	ctx := context.Background()
 	for _, hue := range kiosk.NameHues { // every hue the name can have has a colour to use

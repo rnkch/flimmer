@@ -7,7 +7,7 @@ import (
 )
 
 // head is shared by every page, including login.
-// Favicon is the tab icon in the kiosk's colour; the colour is in its address, so a browser,
+// Favicon is the tab icon in the display's colour; the colour is in its address, so a browser,
 // which keeps favicons for long, fetches a new one when it changes. It is pushed to every open
 // page when the name or colour is saved (handlers.go, events), hence the id.
 templ Favicon(href string) {
@@ -132,10 +132,10 @@ templ PageHead(title string) {
 	</div>
 }
 
-// BrandName is the kiosk's name in the header; click it to rename (only the
+// BrandName is the display's name in the header; click it to rename (only the
 // label: the system hostname stays). Enter or leaving the field saves, Escape
 // cancels, an empty name brings back the hostname.
-// BrandName is the kiosk's name in the header, in the chosen color or one
+// BrandName is the display's name in the header, in the chosen color or one
 // from a hash of the name. Clicking it opens a popover with the name field
 // (set = the stored name, "" while the hostname is shown) and the colors:
 // "auto" plus the nine hues. The name is selected on opening, so typing
@@ -144,12 +144,12 @@ templ PageHead(title string) {
 templ BrandName(name, set, hue string) {
 	<div id="brand" class="brand" style={ hueColor(nameHue(name, hue)) }>
 		<a class="wa-link-plain" href="/playlist" { pageLink("/playlist")... }><wa-icon library="flimmerkiste" name="icon" label={ t(ctx, "Playlist") }></wa-icon></a>
-		<button id="brand-name" type="button" class="editable" title={ name + " – " + t(ctx, "Click to rename this kiosk") }>{ name }</button>
+		<button id="brand-name" type="button" class="editable" title={ name + " – " + t(ctx, "Click to rename") }>{ name }</button>
 		<wa-popover for="brand-name" placement="bottom-start" class="brand-popover"
 			hx-on:wa-after-show="const i = this.querySelector('wa-input'); i.focus(); i.select()"
 			hx-on:wa-after-hide="this.querySelector('form').reset()">
 			<form class="brand-edit" hx-post="/name" hx-target="#brand" hx-swap="outerHTML">
-				<wa-input name="name" value={ set } placeholder={ hostname() } maxlength={ itoa(maxNameLen) } size="s" label={ t(ctx, "Kiosk name") }></wa-input>
+				<wa-input name="name" value={ set } placeholder={ hostname() } maxlength={ itoa(maxNameLen) } size="s" label={ t(ctx, "Display name") }></wa-input>
 				<div class="hues" role="group" aria-label={ t(ctx, "Color") }>
 					<button type="submit" name="hue" value="auto" class="hue auto" style={ hueColor(nameHue(name, "")) }
 						title={ t(ctx, "Automatic (from the name)") } aria-label={ t(ctx, "Automatic (from the name)") }

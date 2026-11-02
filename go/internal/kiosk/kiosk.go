@@ -39,7 +39,7 @@ type Config struct {
 	FallbackWifi string   // "ssid:password" saved once as the lowest-priority network ("" = none)
 	PublicURL    string   // address to show instead of https://<LAN IP>:<port>
 	VideoEncoder string   // h264_v4l2m2m on the Pi
-	LockFile     string   // exists while the kiosk is locked (checked by deploy.sh)
+	LockFile     string   // exists while playback is locked (checked by deploy.sh)
 
 	UpdateRepo    string // GitHub "owner/name" whose releases Upgrade installs ("" = updates off)
 	UpdateAPI     string // GitHub API address, only set by tests
@@ -259,7 +259,7 @@ const DisplayNameMax = 20
 
 var ErrNameTooLong = fmt.Errorf("the name can have at most %d characters", DisplayNameMax)
 
-// DisplayName is the kiosk's name in the web UI header: set there, or the
+// DisplayName is the display's name in the web UI header: set there, or the
 // hostname (without domain). Only a label: the system hostname stays as it is.
 func (s *Service) DisplayName(ctx context.Context) string {
 	if n := s.Setting(ctx, SettingDisplayName); n != "" {
@@ -304,7 +304,7 @@ var NameHues = []string{
 var ErrBadHue = errors.New("unknown color")
 
 // HashHue picks a hue from a hash of the name: the automatic color, the same
-// for the same name, usually different for different kiosks.
+// for the same name, usually different for different displays.
 func HashHue(name string) string {
 	h := fnv.New32a()
 	h.Write([]byte(name))

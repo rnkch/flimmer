@@ -119,7 +119,7 @@ func Enabled(m db.Media) bool { return m.Enabled != 0 }
 
 // SetEnabled turns an entry on or off. A disabled entry keeps its place, title
 // and file; it only isn't played. Turning off the entry on the screen
-// interrupts playback, so that is refused while the kiosk is locked.
+// interrupts playback, so that is refused while playback is locked.
 func (s *Service) SetEnabled(ctx context.Context, id int64, on bool) error {
 	m, err := s.st.GetMedia(ctx, id)
 	if err != nil {

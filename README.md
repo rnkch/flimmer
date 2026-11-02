@@ -79,7 +79,7 @@ service and the boot files (composite PAL by default, HDMI when
 
 Every page links a web app manifest (`/manifest.webmanifest`, public) and home-screen icons,
 so a browser *can* offer to put the remote on a home screen as an app of its own. The app is
-named after the kiosk, so several kiosks stay apart on one phone. There is deliberately no
+named after the display, so several displays stay apart on one phone. There is deliberately no
 service worker: the page is a remote for a screen on the same network, nothing in it works
 offline, and cached files would get in the way of the self-upgrade.
 
@@ -90,7 +90,7 @@ shortcut instead, or nothing; this hasn't been tried on real phones yet.
 The icon is a 4:3 screen full of TV snow in a frame with a thicker bottom border, drawn by
 `go run ./internal/web/cmd/pwaicons` (in `go/`). The home-screen PNGs are blue on the night
 background. The header, the login page and the favicon use the SVG version, whose frame takes
-the colour of the kiosk's name (chosen in the name editor, else from a hash of the name); the
+the colour of the display's name (chosen in the name editor, else from a hash of the name); the
 favicon is served in that colour at `/favicon.svg`, with a PNG at `/favicon.ico` as fallback.
 A change of the name or colour reaches every open page over the live connection: the header and
 the tab icon follow without a reload, and a page that was in the background catches up when it

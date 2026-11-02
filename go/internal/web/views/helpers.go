@@ -44,11 +44,11 @@ type Page struct {
 	JS      string // bundle file names
 	CSS     string
 	Now     NowPlaying
-	Name    string // kiosk name in the header (setting, or the hostname)
+	Name    string // display name in the header (setting, or the hostname)
 	NameSet string // the stored name, "" while the hostname is shown
 	Locked  bool   // playback locked (kiosk.SettingLocked)
 	Hue     string // its chosen color, "" = from a hash of the name
-	Favicon string // the favicon's address (in the kiosk's color)
+	Favicon string // the favicon's address (in the display's color)
 }
 
 type NowPlaying struct {
@@ -294,7 +294,7 @@ func seekAttrs(n NowPlaying) templ.Attributes {
 	}
 }
 
-// hostname and maxNameLen: placeholder and limit of the kiosk name editor.
+// hostname and maxNameLen: placeholder and limit of the display name editor.
 func hostname() string { return kiosk.Hostname() }
 
 const maxNameLen = kiosk.DisplayNameMax

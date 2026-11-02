@@ -205,7 +205,7 @@ func (s *Service) replaceStream(ctx context.Context, j db.Job) {
 	switch {
 	case errors.Is(err, ErrLocked):
 		// The stream is on the screen right now; it stays until someone deletes it.
-		s.Logf(ctx, slog.LevelWarn, "stream kept: the kiosk is locked", "title", j.Title)
+		s.Logf(ctx, slog.LevelWarn, "stream kept: playback is locked", "title", j.Title)
 	case err != nil && !errors.Is(err, ErrNotFound):
 		slog.Warn("remove replaced stream", "id", j.ReplacesMediaID, "err", err)
 	}

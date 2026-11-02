@@ -1,5 +1,5 @@
--- Playlist entries. Ordered by position (1..n, kept contiguous by the kiosk
--- service). Streams have no file: url is played directly by mpv (format is
+-- Playlist entries. Ordered by position (1..n, kept contiguous by the service).
+-- Streams have no file: url is played directly by mpv (format is
 -- the yt-dlp format spec it asks for); filename is then a unique placeholder.
 CREATE TABLE IF NOT EXISTS media (
     id               INTEGER PRIMARY KEY,

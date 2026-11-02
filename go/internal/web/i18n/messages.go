@@ -199,7 +199,7 @@ var german = map[string]string{
 	"Change": "Ändern",
 	"Invalid values: bitrate 200–20000, duration 1–3600": "Ungültige Werte: Bitrate 200–20000, Dauer 1–3600",
 
-	// errors from the kiosk core
+	// errors from the core
 	"The password needs at least 8 characters":   "Das Passwort braucht mindestens 8 Zeichen",
 	"The title must not be empty":                "Der Titel darf nicht leer sein",
 	"The display time must be a positive number": "Die Anzeigedauer muss eine positive Zahl sein",
@@ -258,8 +258,7 @@ var german = map[string]string{
 	"Restart player": "Player neu starten",
 	"Restart the player? Playback starts over from the first entry. For a frozen picture or a player that doesn't react.": "Den Player neu starten? Die Wiedergabe beginnt beim ersten Eintrag. Für ein eingefrorenes Bild oder einen Player, der nicht mehr reagiert.",
 	"The player restarts; playback starts from the first entry.":                                                          "Der Player startet neu; die Wiedergabe beginnt beim ersten Eintrag.",
-	"Kiosk name":                              "Name des Kiosks",
-	"Click to rename this kiosk":              "Klicken, um diesen Kiosk umzubenennen",
+	"Display name": "Anzeigename",
 	"The name can have at most %d characters": "Der Name darf höchstens %d Zeichen haben",
 	"Color":                     "Farbe",
 	"Automatic (from the name)": "Automatisch (aus dem Namen)",

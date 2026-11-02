@@ -47,7 +47,7 @@ wa-dialog::part(dialog) {
   border-bottom: var(--wa-border-width-s) solid var(--wa-color-surface-border);
 }
 
-/* Two rows on every width. Row 1: name, lock (it belongs to the kiosk, like
+/* Two rows on every width. Row 1: name, lock (it belongs to the display, like
    the name), now playing (shrinks, with an ellipsis), language, logout. Row 2: the nav. A grid, not a wrapping flex
    row: that would push buttons onto a row of their own instead of shrinking
    the title. The name takes at most 40 % of row 1. */
@@ -112,7 +112,7 @@ body:has(#lock[data-locked]) :is(.disturbs, li.current .disturbs-current) {
   pointer-events: none;
 }
 
-/* Its color comes from a hash of the kiosk name (style attribute). */
+/* Its color comes from a hash of the display name (style attribute). */
 .topbar .brand {
   display: flex;
   align-items: center;
@@ -126,7 +126,7 @@ body:has(#lock[data-locked]) :is(.disturbs, li.current .disturbs-current) {
   display: flex;
 }
 
-/* The kiosk name (up to 20 characters; the hostname it falls back to may be
+/* The display name (up to 20 characters; the hostname it falls back to may be
    longer) shortens with an ellipsis where space is tight; the tooltip and the
    editor show it in full. */
 .topbar .brand {
@@ -140,7 +140,7 @@ body:has(#lock[data-locked]) :is(.disturbs, li.current .disturbs-current) {
   text-overflow: ellipsis;
 }
 
-/* The kiosk name opens a popover: the name field, below it the color dots
+/* The display name opens a popover: the name field, below it the color dots
    in one row, the chosen one ringed. "auto" is a dashed ring in the color
    the name would get from its hash. */
 #brand-name {

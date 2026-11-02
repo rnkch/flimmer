@@ -15,7 +15,7 @@ import (
 // and uploads still work: they don't touch what is playing.
 const SettingLocked = "locked"
 
-var ErrLocked = errors.New("the kiosk is locked")
+var ErrLocked = errors.New("playback is locked")
 
 func (s *Service) Locked(
 	ctx context.Context,
@@ -23,8 +23,8 @@ func (s *Service) Locked(
 	return s.Setting(ctx, SettingLocked) == "true"
 }
 
-// SetLocked locks or unlocks the kiosk. Config.LockFile mirrors the state for
-// deploy.sh, which refuses to restart a locked kiosk.
+// SetLocked locks or unlocks the display. Config.LockFile mirrors the state for
+// deploy.sh, which refuses to restart a locked display.
 func (s *Service) SetLocked(ctx context.Context, on bool) error {
 	var err error
 	if on {
@@ -44,7 +44,7 @@ func (s *Service) SetLocked(ctx context.Context, on bool) error {
 	return nil
 }
 
-// SyncLockFile makes Config.LockFile exist exactly while the kiosk is locked.
+// SyncLockFile makes Config.LockFile exist exactly while playback is locked.
 func (s *Service) SyncLockFile(ctx context.Context) {
 	if s.cfg.LockFile == "" {
 		return
@@ -60,7 +60,7 @@ func (s *Service) SyncLockFile(ctx context.Context) {
 	}
 }
 
-// unlocked returns ErrLocked while the kiosk is locked.
+// unlocked returns ErrLocked while playback is locked.
 func (s *Service) unlocked(ctx context.Context) error {
 	if s.Locked(ctx) {
 		return ErrLocked
@@ -68,7 +68,7 @@ func (s *Service) unlocked(ctx context.Context) error {
 	return nil
 }
 
-// unlockedFor returns ErrLocked if the kiosk is locked and m is on the screen.
+// unlockedFor returns ErrLocked if playback is locked and m is on the screen.
 func (s *Service) unlockedFor(ctx context.Context, m db.Media) error {
 	if !s.Locked(ctx) {
 		return nil

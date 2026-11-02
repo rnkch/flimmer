@@ -16,7 +16,7 @@ import (
 )
 
 // head is shared by every page, including login.
-// Favicon is the tab icon in the kiosk's colour; the colour is in its address, so a browser,
+// Favicon is the tab icon in the display's colour; the colour is in its address, so a browser,
 // which keeps favicons for long, fetches a new one when it changes. It is pushed to every open
 // page when the name or colour is saved (handlers.go, events), hence the id.
 func Favicon(href string) templ.Component {
@@ -718,10 +718,10 @@ func PageHead(title string) templ.Component {
 	})
 }
 
-// BrandName is the kiosk's name in the header; click it to rename (only the
+// BrandName is the display's name in the header; click it to rename (only the
 // label: the system hostname stays). Enter or leaving the field saves, Escape
 // cancels, an empty name brings back the hostname.
-// BrandName is the kiosk's name in the header, in the chosen color or one
+// BrandName is the display's name in the header, in the chosen color or one
 // from a hash of the name. Clicking it opens a popover with the name field
 // (set = the stored name, "" while the hostname is shown) and the colors:
 // "auto" plus the nine hues. The name is selected on opening, so typing
@@ -801,9 +801,9 @@ func BrandName(name, set, hue string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var38 string
-		templ_7745c5c3_Var38, templ_7745c5c3_Err = templruntime.NewAttributeExpression(name + " – " + t(ctx, "Click to rename this kiosk")).Resolve(ctx)
+		templ_7745c5c3_Var38, templ_7745c5c3_Err = templruntime.NewAttributeExpression(name + " – " + t(ctx, "Click to rename")).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/layout.templ`, Line: 147, Col: 118}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/layout.templ`, Line: 147, Col: 107}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var38)
 		if templ_7745c5c3_Err != nil {
@@ -816,7 +816,7 @@ func BrandName(name, set, hue string) templ.Component {
 		var templ_7745c5c3_Var39 string
 		templ_7745c5c3_Var39, templ_7745c5c3_Err = templ.JoinStringErrs(name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/layout.templ`, Line: 147, Col: 127}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/layout.templ`, Line: 147, Col: 116}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var39))
 		if templ_7745c5c3_Err != nil {
@@ -866,9 +866,9 @@ func BrandName(name, set, hue string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var43 string
-		templ_7745c5c3_Var43, templ_7745c5c3_Err = templruntime.NewAttributeExpression(t(ctx, "Kiosk name")).Resolve(ctx)
+		templ_7745c5c3_Var43, templ_7745c5c3_Err = templruntime.NewAttributeExpression(t(ctx, "Display name")).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/layout.templ`, Line: 152, Col: 135}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/layout.templ`, Line: 152, Col: 137}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var43)
 		if templ_7745c5c3_Err != nil {

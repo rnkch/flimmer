@@ -245,7 +245,7 @@ type UpgradeResult struct {
 
 // Upgrade installs the latest release and restarts the service. Nothing is
 // replaced unless the download is complete, matches its checksum and the new
-// binary runs. Refused while the kiosk is locked: it interrupts playback.
+// binary runs. Refused while playback is locked: it interrupts playback.
 func (s *Service) Upgrade(ctx context.Context) (UpgradeResult, error) {
 	if err := s.unlocked(ctx); err != nil {
 		return UpgradeResult{}, err

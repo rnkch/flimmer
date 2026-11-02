@@ -131,7 +131,7 @@ type userError string
 
 func (e userError) Error() string { return string(e) }
 
-// errText translates the kiosk's known errors; others pass through as they are.
+// errText translates the display's known errors; others pass through as they are.
 func errText(ctx context.Context, err error) string {
 	var ue userError
 	switch {
@@ -547,9 +547,9 @@ func (s *Server) playerCard(w http.ResponseWriter, r *http.Request) {
 const webQRShowFor = 10 * time.Second
 
 // playerSeek jumps to the second the player bar was clicked at.
-// --- kiosk name in the header -------------------------------------------------
+// --- display name in the header -------------------------------------------------
 
-// brandView is the kiosk's name and icon in the header, for the name editor's answer and for
+// brandView is the display's name and icon in the header, for the name editor's answer and for
 // the live connection.
 func (s *Server) brandView(ctx context.Context) templ.Component {
 	return views.BrandName(
@@ -683,8 +683,8 @@ func (s *Server) playerAction(w http.ResponseWriter, r *http.Request) {
 const pwaThemeColor = "#1a1b26"
 
 // manifest is the web app manifest: what a browser needs to put the page on a home screen
-// as an app of its own (standalone, no address bar). The name is the kiosk's own, so
-// several kiosks installed on one phone can be told apart. There is no service worker:
+// as an app of its own (standalone, no address bar). The name is the display's own, so
+// several displays installed on one phone can be told apart. There is no service worker:
 // the page is a remote for a screen that's on the same network, and nothing in it would
 // work offline. Browsers only offer a real installation on a trusted HTTPS origin; on the
 // self-signed local address most will offer a plain shortcut (see the README).
@@ -1070,7 +1070,7 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 			c, err := s.playlistSummaryView(ctx)
 			partial("#playlist-summary", c, err)
 		}
-		if brand { // the name, its icon and the tab icon, in the kiosk's colour
+		if brand { // the name, its icon and the tab icon, in the display's colour
 			partial("#brand", s.brandView(ctx), nil)
 			partial("#favicon", views.Favicon(s.faviconHref(ctx)), nil)
 		}

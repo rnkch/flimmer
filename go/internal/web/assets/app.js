@@ -45,6 +45,11 @@ const assetVersion = document.querySelector('meta[name="asset-version"]')?.conte
 registerIconLibrary('default', {
   resolver: (name) => `/static/icons/${name}.svg?v=${assetVersion}`,
 });
+// The app's own icon (a screen full of snow), drawn in currentColor: in the header it takes the
+// colour of the kiosk's name. Made by cmd/pwaicons.
+registerIconLibrary('flimmerkiste', {
+  resolver: (name) => `/static/pwa/${name}.svg?v=${assetVersion}`,
+});
 
 window.Alpine = Alpine;
 Alpine.data('uploader', uploader);

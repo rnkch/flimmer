@@ -81,8 +81,16 @@ offline, and cached files would get in the way of the self-upgrade.
 
 Browsers only install a page as an app from a trusted HTTPS origin. flimmerkiste's own
 address (`https://<LAN address>:8443`) uses a self-signed certificate, so expect a plain
-shortcut instead, or nothing; this hasn't been tried on real phones yet. The icons are made
-by `go/internal/web/cmd/pwaicons/generate.sh` from the header's `tv` glyph.
+shortcut instead, or nothing; this hasn't been tried on real phones yet.
+
+The icon is a 4:3 screen full of TV snow in a frame with a thicker bottom border, drawn by
+`go run ./internal/web/cmd/pwaicons` (in `go/`). The home-screen PNGs are blue on the night
+background. The header, the login page and the favicon use the SVG version, whose frame takes
+the colour of the kiosk's name (chosen in the name editor, else from a hash of the name); the
+favicon is served in that colour at `/favicon.svg`, with a PNG at `/favicon.ico` as fallback.
+A change of the name or colour reaches every open page over the live connection: the header and
+the tab icon follow without a reload, and a page that was in the background catches up when it
+comes back.
 
 ## Releases and upgrades
 

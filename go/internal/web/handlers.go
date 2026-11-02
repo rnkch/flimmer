@@ -45,6 +45,7 @@ func (s *Server) page(r *http.Request, title, active string) views.Page {
 		NameSet: s.k.Setting(r.Context(), kiosk.SettingDisplayName),
 		Hue:     s.k.DisplayHue(r.Context()),
 		Locked:  s.k.Locked(r.Context()),
+		Favicon: s.faviconHref(r.Context()),
 	}
 }
 
@@ -548,17 +549,18 @@ const webQRShowFor = 10 * time.Second
 // playerSeek jumps to the second the player bar was clicked at.
 // --- kiosk name in the header -------------------------------------------------
 
-func (s *Server) nameShow(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	render(
-		w,
-		r,
-		views.BrandName(
-			s.k.DisplayName(ctx),
-			s.k.Setting(ctx, kiosk.SettingDisplayName),
-			s.k.DisplayHue(ctx),
-		),
+// brandView is the kiosk's name and icon in the header, for the name editor's answer and for
+// the live connection.
+func (s *Server) brandView(ctx context.Context) templ.Component {
+	return views.BrandName(
+		s.k.DisplayName(ctx),
+		s.k.Setting(ctx, kiosk.SettingDisplayName),
+		s.k.DisplayHue(ctx),
 	)
+}
+
+func (s *Server) nameShow(w http.ResponseWriter, r *http.Request) {
+	render(w, r, s.brandView(r.Context()))
 }
 
 // nameSave stores the name and, when a color dot was clicked, its color
@@ -579,7 +581,7 @@ func (s *Server) nameSave(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	s.nameShow(w, r)
+	s.nameShow(w, r) // the other open pages follow over the live connection (events)
 }
 
 func (s *Server) lockShow(w http.ResponseWriter, r *http.Request) {
@@ -706,9 +708,14 @@ func (s *Server) manifest(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// pwaIcon serves the home-screen icons (assets/pwa, made by cmd/pwaicons/generate.sh).
+// pwaIcon serves the home-screen icons (assets/pwa, drawn by cmd/pwaicons).
 func (s *Server) pwaIcon(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Cache-Control", "public, max-age=86400")
+	// app.js asks for the header icon with ?v=<bundle hash>: that URL never changes its content.
+	if r.URL.Query().Get("v") != "" {
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	} else {
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+	}
 	http.ServeFileFS(w, r, s.pwa, r.PathValue("name"))
 }
 
@@ -1021,11 +1028,12 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 		return send("", b.String())
 	}
 
-	// The player card, the playlist and its summary change with the events below. They are
+	// The player card, the playlist and its summary, and the name in the header with the tab
+	// icon, change with the events below. They are
 	// pushed in one message, so every open page gets them without asking (and the parts
 	// arrive together). A page without these elements ignores them. Everything is sent
 	// once when a connection opens: the page may have missed events while it was away.
-	live := func(card, list, summary bool) bool {
+	live := func(card, list, summary, brand bool) bool {
 		var b bytes.Buffer
 		partial := func(target string, c templ.Component, err error) {
 			if err != nil {
@@ -1047,6 +1055,10 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 			c, err := s.playlistSummaryView(ctx)
 			partial("#playlist-summary", c, err)
 		}
+		if brand { // the name, its icon and the tab icon, in the kiosk's colour
+			partial("#brand", s.brandView(ctx), nil)
+			partial("#favicon", views.Favicon(s.faviconHref(ctx)), nil)
+		}
 		return b.Len() == 0 || send("", b.String())
 	}
 
@@ -1058,7 +1070,7 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 	defer keepAlive.Stop()
 	// Every connection starts with the boot id: a page that reconnects after a
 	// restart sees another one and reloads (app.js, "boot").
-	if !send("boot", s.boot) || !live(true, true, true) {
+	if !send("boot", s.boot) || !live(true, true, true, true) {
 		return
 	}
 	for {
@@ -1074,7 +1086,7 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 			fl.Flush()
 		case <-clock.C:
 			ok := true
-			var card, list, summary bool
+			var card, list, summary, brand bool
 			for t := range pending {
 				switch t {
 				case kiosk.EventPlayer:
@@ -1084,11 +1096,13 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 					list, summary = true, true
 				case kiosk.EventJob:
 					summary = true // the number of jobs in progress
+				case kiosk.EventSettings:
+					brand = true // the name or its colour (every setting counts; it is cheap)
 				}
 				ok = ok && send(string(t), "1")
 			}
 			clear(pending)
-			ok = ok && live(card, list, summary)
+			ok = ok && live(card, list, summary, brand)
 			// Every second while something plays (videos and images alike).
 			if ps := s.k.PlayerState(); ok && ps.Path != "" && !ps.Pause {
 				ok = nowPlaying()

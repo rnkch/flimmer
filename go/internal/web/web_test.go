@@ -361,10 +361,12 @@ func TestIconCachingAndAssetVersion(t *testing.T) {
 		}
 		return rec.Header().Get("Cache-Control")
 	}
-	if got := cache("/static/icons/tv.svg?v=abc123"); got != "public, max-age=31536000, immutable" {
+	if got := cache(
+		"/static/icons/film.svg?v=abc123",
+	); got != "public, max-age=31536000, immutable" {
 		t.Errorf("versioned icon: %q", got)
 	}
-	if got := cache("/static/icons/tv.svg"); got != "public, max-age=86400" {
+	if got := cache("/static/icons/film.svg"); got != "public, max-age=86400" {
 		t.Errorf("unversioned icon: %q", got)
 	}
 
@@ -457,9 +459,10 @@ func TestLiveConnectionPushesWhatChanged(t *testing.T) {
 	s, k := newServer(t)
 	msgs := openEvents(t, s, k)
 	card, list, summary := "#player-card", "#playlist", "#playlist-summary"
+	brand, favicon := "#brand", "#favicon"
 
 	first, _ := partials(msgs, 1200*time.Millisecond)
-	for _, want := range []string{card, list, summary} {
+	for _, want := range []string{card, list, summary, brand, favicon} {
 		if !first[want] {
 			t.Errorf("a new connection isn't sent %s (got %v)", want, first)
 		}
@@ -468,9 +471,11 @@ func TestLiveConnectionPushesWhatChanged(t *testing.T) {
 		event     kiosk.EventType
 		want, not []string
 	}{
-		{kiosk.EventPlayer, []string{card, list}, []string{summary}}, // the current entry moved
-		{kiosk.EventPlaylist, []string{list, summary}, []string{card}},
-		{kiosk.EventJob, []string{summary}, []string{card, list}}, // jobs in progress
+		{kiosk.EventPlayer, []string{card, list}, []string{summary, brand}}, // the current entry moved
+		{kiosk.EventPlaylist, []string{list, summary}, []string{card, brand}},
+		{kiosk.EventJob, []string{summary}, []string{card, list, brand}}, // jobs in progress
+		// the name or its colour: the header and the tab icon, in every open page
+		{kiosk.EventSettings, []string{brand, favicon}, []string{card, list, summary}},
 	} {
 		k.Hub.Publish(kiosk.Event{Type: c.event})
 		got, events := partials(msgs, 2*time.Second)
@@ -619,5 +624,128 @@ func TestManifestAndHomeScreenIcons(t *testing.T) {
 		if !strings.Contains(body, want) {
 			t.Errorf("the page head lacks %s", want)
 		}
+	}
+}
+
+// The favicon is the app's icon with the frame in the kiosk's colour, public like the other
+// icons; the header and the login page use the same icon (currentColor, so it takes the
+// colour of the name).
+func TestFaviconAndHeaderIconFollowTheKioskColor(t *testing.T) {
+	s, k := newServer(t)
+	ctx := context.Background()
+	for _, hue := range kiosk.NameHues { // every hue the name can have has a colour to use
+		if c := s.hues[hue]; len(c) != 7 || c[0] != '#' {
+			t.Errorf("no colour for hue %q: %q", hue, c)
+		}
+	}
+	get := func(path string, cookie *http.Cookie) *httptest.ResponseRecorder {
+		req := httptest.NewRequest("GET", path, nil)
+		if cookie != nil {
+			req.AddCookie(cookie)
+		}
+		rec := httptest.NewRecorder()
+		s.Handler().ServeHTTP(rec, req)
+		return rec
+	}
+
+	for hue, want := range map[string]string{"red": s.hues["red"], "green": s.hues["green"]} {
+		k.SetDisplayHue(ctx, hue)
+		rec := get("/favicon.svg", nil) // no cookie
+		body := rec.Body.String()
+		if rec.Code != 200 || rec.Header().Get("Content-Type") != "image/svg+xml" ||
+			!strings.Contains(body, `fill="`+want+`"`) || strings.Contains(body, "currentColor") {
+			t.Errorf("%s: %d %q, want the frame in %s:\n%.200s", hue, rec.Code,
+				rec.Header().Get("Content-Type"), want, body)
+		}
+	}
+	if s.hues["red"] == s.hues["green"] {
+		t.Error("two hues share a colour")
+	}
+	// Without a chosen colour it is the one the name hashes to, as in the header.
+	k.SetDisplayHue(ctx, "")
+	k.SetDisplayName(ctx, "Foyer")
+	if want := s.hues[kiosk.HashHue("Foyer")]; !strings.Contains(
+		get("/favicon.svg", nil).Body.String(),
+		want,
+	) {
+		t.Errorf("automatic colour: the favicon lacks %s", want)
+	}
+
+	// The PNG fallback, also at the address browsers ask for by habit.
+	rec := get("/favicon.ico", nil)
+	cfg, err := png.DecodeConfig(rec.Body)
+	if rec.Code != 200 || rec.Header().Get("Content-Type") != "image/png" || err != nil ||
+		cfg.Width != 32 {
+		t.Errorf("/favicon.ico: %d %q %v %+v", rec.Code, rec.Header().Get("Content-Type"), err, cfg)
+	}
+	// The header's icon, uncoloured (currentColor) and cached for good under a version.
+	rec = get("/static/pwa/icon.svg?v=abc", nil)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "currentColor") ||
+		rec.Header().Get("Cache-Control") != "public, max-age=31536000, immutable" {
+		t.Errorf("icon.svg: %d %q", rec.Code, rec.Header().Get("Cache-Control"))
+	}
+
+	// The pages: the favicon carries the colour (so it is fetched again after a change), the
+	// header and the login page use the app's icon, and the old glyph is gone.
+	k.SetDisplayHue(ctx, "red")
+	token, _ := k.Login(ctx, "test-password-123")
+	page := get("/playlist", &http.Cookie{Name: sessionCookie, Value: token}).Body.String()
+	for _, want := range []string{
+		`rel="icon" href="/favicon.svg?c=` + strings.TrimPrefix(s.hues["red"], "#") + `"`,
+		`href="/static/pwa/favicon-32.png"`, `<wa-icon library="flimmerkiste" name="icon"`,
+	} {
+		if !strings.Contains(page, want) {
+			t.Errorf("/playlist lacks %s", want)
+		}
+	}
+	login := get("/login", nil).Body.String()
+	if !strings.Contains(login, `rel="icon" href="/favicon.svg"`) ||
+		!strings.Contains(login, `<wa-icon library="flimmerkiste" name="icon"`) {
+		t.Errorf("the login page lacks the favicon or the icon")
+	}
+	if strings.Contains(page, `name="tv"`) || strings.Contains(login, `name="tv"`) {
+		t.Error("the old tv glyph is still in use")
+	}
+}
+
+// Changing the colour (here by the API, as another browser would) reaches every open page
+// over the live connection: the header's name and icon, and the tab icon, in the new colour.
+func TestColourChangeIsPushedToOpenPages(t *testing.T) {
+	s, k := newServer(t)
+	msgs := openEvents(t, s, k)
+	partials(msgs, 1200*time.Millisecond) // what a new connection gets first
+
+	if err := k.SetDisplayName(context.Background(), "Foyer"); err != nil {
+		t.Fatal(err)
+	}
+	if err := k.SetDisplayHue(context.Background(), "red"); err != nil {
+		t.Fatal(err)
+	}
+	var brand, favicon string
+	deadline := time.After(3 * time.Second)
+	for brand == "" || favicon == "" || !strings.Contains(brand, "kiosk-hue-red") {
+		select {
+		case m, ok := <-msgs:
+			if !ok {
+				t.Fatal("the connection ended")
+			}
+			for _, part := range strings.Split(m.data, "</hx-partial>") {
+				switch {
+				case strings.Contains(part, `hx-target="#brand"`):
+					brand = part
+				case strings.Contains(part, `hx-target="#favicon"`):
+					favicon = part
+				}
+			}
+		case <-deadline:
+			t.Fatalf("not pushed in time:\nbrand: %.200s\nfavicon: %.200s", brand, favicon)
+		}
+	}
+	if !strings.Contains(brand, "Foyer") ||
+		!strings.Contains(brand, `color: var(--kiosk-hue-red);`) {
+		t.Errorf("the pushed header lacks the new name or colour:\n%s", brand)
+	}
+	if want := `c=` + strings.TrimPrefix(s.hues["red"], "#"); !strings.Contains(favicon, want) {
+		t.Errorf("the pushed tab icon lacks %s:\n%s", want, favicon)
 	}
 }

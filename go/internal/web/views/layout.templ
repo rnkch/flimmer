@@ -7,12 +7,21 @@ import (
 )
 
 // head is shared by every page, including login.
-templ head(title, css, js string) {
+// Favicon is the tab icon in the kiosk's colour; the colour is in its address, so a browser,
+// which keeps favicons for long, fetches a new one when it changes. It is pushed to every open
+// page when the name or colour is saved (handlers.go, events), hence the id.
+templ Favicon(href string) {
+	<link id="favicon" rel="icon" href={ href } type="image/svg+xml" sizes="any"/>
+}
+
+templ head(title, css, js, favicon string) {
 	<meta charset="utf-8"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
 	<meta name="asset-version" content={ assetVersion(js) }/>
 	<!-- Home screen: the manifest and icons are public (fetched without cookies). The
 	     colour is the dark scheme's background; the light one is Tokyo Night Day's. -->
+	@Favicon(favicon)
+	<link rel="icon" href="/static/pwa/favicon-32.png" type="image/png" sizes="32x32"/>
 	<link rel="manifest" href="/manifest.webmanifest"/>
 	<link rel="apple-touch-icon" href="/static/pwa/apple-touch-icon.png"/>
 	<meta name="theme-color" content="#1a1b26" media="(prefers-color-scheme: dark)"/>
@@ -47,7 +56,7 @@ templ Layout(p Page) {
 	<!DOCTYPE html>
 	<html lang={ i18n.Lang(ctx) } class="wa-theme-default wa-palette-tokyonight">
 		<head>
-			@head(t(ctx, p.Title), p.CSS, p.JS)
+			@head(t(ctx, p.Title), p.CSS, p.JS, p.Favicon)
 		</head>
 		<body data-i18n={ jsStrings(ctx) }>
 			<header class="topbar wa-cloak">
@@ -133,7 +142,7 @@ templ PageHead(title string) {
 // closes without saving and resets the field.
 templ BrandName(name, set, hue string) {
 	<div id="brand" class="brand" style={ hueColor(nameHue(name, hue)) }>
-		<a class="wa-link-plain" href="/playlist" { pageLink("/playlist")... }><wa-icon name="tv" label={ t(ctx, "Playlist") }></wa-icon></a>
+		<a class="wa-link-plain" href="/playlist" { pageLink("/playlist")... }><wa-icon library="flimmerkiste" name="icon" label={ t(ctx, "Playlist") }></wa-icon></a>
 		<button id="brand-name" type="button" class="editable" title={ name + " – " + t(ctx, "Click to rename this kiosk") }>{ name }</button>
 		<wa-popover for="brand-name" placement="bottom-start" class="brand-popover"
 			hx-on:wa-after-show="const i = this.querySelector('wa-input'); i.focus(); i.select()"
@@ -186,14 +195,14 @@ templ Login(css, js, errMsg string, noPassword bool) {
 	<!DOCTYPE html>
 	<html lang={ i18n.Lang(ctx) } class="wa-theme-default wa-palette-tokyonight">
 		<head>
-			@head(t(ctx, "Log in"), css, js)
+			@head(t(ctx, "Log in"), css, js, "/favicon.svg")
 		</head>
 		<body data-i18n={ jsStrings(ctx) }>
 			<main class="login wa-cloak">
 				<wa-card>
 					<form method="post" action="/login" class="wa-stack">
 						<div class="wa-split">
-							<h1 class="wa-heading-m"><wa-icon name="tv"></wa-icon> Flimmerkiste</h1>
+							<h1 class="wa-heading-m"><wa-icon library="flimmerkiste" name="icon"></wa-icon> Flimmerkiste</h1>
 							@langSwitch()
 						</div>
 						if noPassword {

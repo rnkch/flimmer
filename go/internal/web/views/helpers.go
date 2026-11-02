@@ -48,6 +48,7 @@ type Page struct {
 	NameSet string // the stored name, "" while the hostname is shown
 	Locked  bool   // playback locked (kiosk.SettingLocked)
 	Hue     string // its chosen color, "" = from a hash of the name
+	Favicon string // the favicon's address (in the kiosk's color)
 }
 
 type NowPlaying struct {

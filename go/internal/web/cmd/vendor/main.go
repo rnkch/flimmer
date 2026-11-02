@@ -81,7 +81,6 @@ var icons = []string{
 	"tower-broadcast",
 	"trash",
 	"triangle-exclamation",
-	"tv",
 	"upload",
 	"wifi",
 	"xmark",

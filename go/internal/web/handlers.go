@@ -628,6 +628,21 @@ func (s *Server) playerAction(w http.ResponseWriter, r *http.Request) {
 		err = s.k.TogglePause(ctx)
 	case "stats":
 		err = s.k.ToggleStats(ctx)
+	case "subtitles":
+		if s.k.SubtitleTracks(ctx) == 0 {
+			toast(w, "warning", i18n.T(ctx, "This has no subtitles."))
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		name, serr := s.k.CycleSubtitles(ctx)
+		if serr == nil {
+			msg := i18n.T(ctx, "Subtitles off")
+			if name != "" {
+				msg = i18n.T(ctx, "Subtitles: %s", name)
+			}
+			toast(w, "success", msg)
+		}
+		err = serr
 	case "resume":
 		err = s.k.ResumePlaylist(ctx)
 	case "restart":

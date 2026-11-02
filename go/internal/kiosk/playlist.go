@@ -337,6 +337,46 @@ func (s *Service) TogglePause(ctx context.Context) error {
 	return err
 }
 
+// CycleSubtitles switches to the next subtitle track of the playing video (after the last one
+// they go off) and returns what is shown now: the track's language and title, "" for off. It
+// works while locked: nothing is interrupted.
+func (s *Service) CycleSubtitles(ctx context.Context) (string, error) {
+	if _, err := s.player.Command(ctx, "cycle", "sub"); err != nil {
+		return "", err
+	}
+	data, err := s.player.Command(ctx, "get_property", "current-tracks/sub")
+	if err != nil { // no current track: subtitles are off (or there are none)
+		return "", nil
+	}
+	var tr struct {
+		Lang  string `json:"lang"`
+		Title string `json:"title"`
+	}
+	if json.Unmarshal(data, &tr) != nil {
+		return "", nil
+	}
+	return strings.TrimSpace(tr.Lang + " " + tr.Title), nil
+}
+
+// SubtitleTracks is the number of subtitle tracks of the playing file.
+func (s *Service) SubtitleTracks(ctx context.Context) int {
+	data, err := s.player.Command(ctx, "get_property", "track-list")
+	if err != nil {
+		return 0
+	}
+	var tl []struct {
+		Type string `json:"type"`
+	}
+	json.Unmarshal(data, &tl)
+	n := 0
+	for _, t := range tl {
+		if t.Type == "sub" {
+			n++
+		}
+	}
+	return n
+}
+
 var ErrNotSeekable = errors.New("this can't jump to a position")
 
 // Seek jumps to pos seconds in the playing video or seekable stream. Images

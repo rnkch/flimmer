@@ -69,6 +69,8 @@ templ PlayerCard(n NowPlaying) {
 				if n.Streaming != "" {
 					<wa-button class="disturbs" variant="brand" appearance="outlined" hx-post="/player/resume"><wa-icon slot="start" name="list"></wa-icon> { t(ctx, "Back to playlist") }</wa-button>
 				}
+				<wa-button id="btn-subs" appearance="filled" hx-post="/player/subtitles"><wa-icon name="closed-captioning" label={ t(ctx, "Subtitles") }></wa-icon></wa-button>
+				<wa-tooltip for="btn-subs">{ t(ctx, "Next subtitle track / off") }</wa-tooltip>
 				<span class="locked-note wa-caption-xs"><wa-icon name="lock"></wa-icon> { t(ctx, "Locked: the controls are off until it's unlocked at the top.") }</span>
 				<span style="flex: 1;"></span>
 				<wa-button class="disturbs" size="s" appearance="plain" hx-post="/player/stats"><wa-icon slot="start" name="chart-simple"></wa-icon> { t(ctx, "Stats on screen") }</wa-button>

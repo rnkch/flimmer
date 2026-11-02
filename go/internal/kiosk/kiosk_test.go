@@ -928,3 +928,48 @@ func TestChooseFormatsAvoidsHeavy(t *testing.T) {
 		t.Fatalf("auto = %q, want a light format", info.Auto)
 	}
 }
+
+// Subtitles cycle through the tracks of the playing video and then switch off.
+func TestCycleSubtitlesWithMpv(t *testing.T) {
+	if _, err := exec.LookPath("mpv"); err != nil {
+		t.Skip("mpv not installed")
+	}
+	s, p := newTestService(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	srt := filepath.Join(s.cfg.TmpDir, "a.srt")
+	os.WriteFile(srt, []byte("1\n00:00:00,000 --> 00:00:09,000\nHallo\n"), 0o644)
+	if out, err := exec.Command("ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=s=160x120:d=10:r=10",
+		"-i", srt, "-i", srt, "-map", "0", "-map", "1", "-map", "2", "-c:v", "libx264", "-c:s", "srt",
+		"-metadata:s:s:0", "language=deu", "-metadata:s:s:1", "language=eng",
+		filepath.Join(s.cfg.MediaDir, "v.mkv")).
+		CombinedOutput(); err != nil {
+		t.Fatalf("%v: %s", err, out)
+	}
+	connected := make(chan struct{}, 1)
+	onConnect := p.OnConnect
+	p.OnConnect = func(ctx context.Context) { onConnect(ctx); connected <- struct{}{} }
+	go p.Run(ctx)
+	<-connected
+	if _, err := s.addMedia(ctx,
+		db.InsertMediaParams{Filename: "v.mkv", Title: "v", Kind: "video"}, 0); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(1500 * time.Millisecond)
+	if n := s.SubtitleTracks(ctx); n != 2 {
+		t.Fatalf("%d subtitle tracks, want 2", n)
+	}
+	var got []string
+	for range 3 {
+		name, err := s.CycleSubtitles(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got = append(got, name)
+	}
+	t.Logf("cycle: %q", got)
+	// mpv starts with the first track on, so three steps go: second, off, first.
+	if got[0] == got[1] || got[1] != "" && got[2] == got[1] {
+		t.Fatalf("cycle: %q", got)
+	}
+}

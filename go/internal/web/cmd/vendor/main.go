@@ -47,6 +47,7 @@ var icons = []string{
 	"circle-exclamation",
 	"circle-info",
 	"clock",
+	"closed-captioning",
 	"display",
 	"download",
 	"ellipsis",

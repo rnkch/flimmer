@@ -26,6 +26,10 @@ still the best-tested setup ([deploy/raspberry-pi](deploy/raspberry-pi)).
   network
 - Uploads are checked with ffprobe and re-encoded to H.264 only when the
   device can't play them as they are
+- Phone media is made to look right: rotated and non-square-pixel videos are
+  scaled by the size as shown, HDR (HLG/PQ, BT.2020) videos are converted to
+  BT.709 (needs ffmpeg's `zscale`), and photos with an ICC profile (Display P3,
+  Adobe RGB) are converted to sRGB, since the player does no colour management
 - Optional Telegram bot (German): uploads, playlist, player controls,
   status, screenshots
 

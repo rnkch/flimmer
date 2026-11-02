@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,6 +18,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/rnkch/flimmerkiste/internal/store/db"
@@ -370,6 +372,7 @@ func (s *Service) ingest(ctx context.Context, j db.Job) (db.Media, error) {
 		dur = s.SettingInt(ctx, SettingImageDurationDflt)
 	}
 	final, _ := probe(ctx, s.cfg.FFprobe, dst)
+	fw, fh := final.Display()
 	pos := int(j.WantPosition)
 	if j.ReplacesMediaID != 0 { // "download instead": take the stream's current place
 		if r, err := s.st.GetMedia(ctx, j.ReplacesMediaID); err == nil {
@@ -378,7 +381,7 @@ func (s *Service) ingest(ctx context.Context, j db.Job) (db.Media, error) {
 	}
 	return s.addMedia(ctx, db.InsertMediaParams{
 		Filename: name, Title: title, Kind: kind, ImageDurationS: int64(dur),
-		Width: int64(final.Width), Height: int64(final.Height), DurationS: final.Duration,
+		Width: int64(fw), Height: int64(fh), DurationS: final.Duration,
 		SizeBytes: fileSize(dst), Source: j.Source,
 	}, pos)
 }
@@ -422,6 +425,7 @@ func (s *Service) ingestImage(ctx context.Context, src, ext string) (string, err
 		if err != nil {
 			return "", fmt.Errorf("heif-convert: %v: %s", err, lastLine(out))
 		}
+		s.fixStillColor(filepath.Join(s.cfg.MediaDir, name))
 		return name, nil
 	}
 	switch ext {
@@ -432,7 +436,12 @@ func (s *Service) ingestImage(ctx context.Context, src, ext string) (string, err
 		ext = ".jpg"
 	}
 	name := uniqueName(s.cfg.MediaDir, "image", ext)
-	return name, moveFile(src, filepath.Join(s.cfg.MediaDir, name))
+	dst := filepath.Join(s.cfg.MediaDir, name)
+	if err := moveFile(src, dst); err != nil {
+		return name, err
+	}
+	s.fixStillColor(dst)
+	return name, nil
 }
 
 // videoFilter scales a video down to fit the output (720×576 composite,
@@ -472,12 +481,14 @@ func playsAsIs(hdmi bool, in probeInfo) bool {
 	if hdmi {
 		maxW, maxH = 1920, 1080
 	}
-	maxFPS := 30.5 // 29.97 and 30
-	if in.Height <= 720 {
+	w, h := in.Display() // a portrait phone video is 720 wide and 1280 high, not the other way round
+	maxFPS := 30.5       // 29.97 and 30
+	if h <= 720 {
 		maxFPS = 60.5
 	}
+	// HDR and BT.2020 are converted (the player doesn't colour-manage), so they never play as they are.
 	return in.VideoCodec == "h264" && (in.PixFmt == "yuv420p" || in.PixFmt == "yuvj420p") &&
-		in.Width <= maxW && in.Height <= maxH && in.FPS <= maxFPS && in.BitRate <= keepMaxBitrate
+		!in.wideGamut() && w <= maxW && h <= maxH && in.FPS <= maxFPS && in.BitRate <= keepMaxBitrate
 }
 
 // ingestVideo takes a video as it is (asIs: it plays well, or the uploader
@@ -500,7 +511,26 @@ func (s *Service) ingestVideo(
 		return name, moveFile(src, filepath.Join(s.cfg.MediaDir, name))
 	}
 
-	vf, needFilter := videoFilter(s.cfg.HDMI, info.Width, info.Height)
+	// ffmpeg turns a rotated phone video upright before the filters, so they work on the size
+	// as shown, with square pixels.
+	dw, dh := info.Display()
+	var chain []string
+	if vf, ok := videoFilter(s.cfg.HDMI, dw, dh); ok {
+		chain = append(chain, vf)
+	} else if info.nonSquare() { // fits, but the pixels aren't square: draw them square
+		chain = append(chain, fmt.Sprintf("scale=%d:%d:flags=spline", dw&^1, dh&^1))
+	}
+	if info.nonSquare() {
+		chain = append(chain, "setsar=1")
+	}
+	toSDR := info.wideGamut()
+	switch {
+	case toSDR && hasFilter(ctx, s.cfg.FFmpeg, "zscale"):
+		chain = append(chain, info.sdrChain())
+	case toSDR:
+		slog.Warn("HDR video, but this ffmpeg has no zscale: colours will be off")
+		toSDR = false
+	}
 	name := uniqueName(s.cfg.MediaDir, "video", ".mkv")
 	dst := filepath.Join(s.cfg.MediaDir, name)
 	tmp := filepath.Join(s.cfg.TmpDir, "out-"+name)
@@ -519,10 +549,15 @@ func (s *Service) ingestVideo(
 		"-i",
 		src,
 	}
-	if needFilter {
-		args = append(args, "-vf", vf)
+	if len(chain) > 0 {
+		args = append(args, "-vf", strings.Join(chain, ","))
 	}
-	args = append(args, "-pix_fmt", "yuv420p", "-vcodec", s.cfg.VideoEncoder,
+	args = append(args, "-pix_fmt", "yuv420p")
+	if toSDR { // say so: the result is BT.709, whatever the source was
+		args = append(args, "-colorspace", "bt709", "-color_primaries", "bt709",
+			"-color_trc", "bt709", "-color_range", "tv")
+	}
+	args = append(args, "-vcodec", s.cfg.VideoEncoder,
 		"-b:v", b, "-maxrate", b, "-bufsize", b, "-g", "25", "-acodec", "copy", tmp)
 
 	cmd := exec.CommandContext(ctx, "nice", args...)
@@ -551,6 +586,12 @@ func (s *Service) ingestVideo(
 		}
 	}
 	if err := cmd.Wait(); err != nil {
+		if toSDR &&
+			ctx.Err() == nil { // better off-colour than not at all: once without the conversion
+			slog.Warn("HDR conversion failed, transcoding without it", "err", stderr.last())
+			info.ColorPrimaries, info.ColorTransfer = "", ""
+			return s.ingestVideo(ctx, jobID, src, ext, info, bitrateK, false)
+		}
 		return "", fmt.Errorf("transcoding failed: %v: %s", err, stderr.last())
 	}
 	return name, moveFile(tmp, dst)
@@ -565,9 +606,81 @@ type probeInfo struct {
 	HasVideo   bool
 	VideoCodec string
 	PixFmt     string
-	Width      int
+	Width      int // as coded; Display() is the size as shown
 	Height     int
 	FPS        float64 // 0 when unknown
+
+	// What a player needs to know to show it right. Phones store a portrait video as a
+	// landscape one with a rotation, and may mark HDR (BT.2020 with HLG or PQ).
+	Rotation       int    // degrees the picture is turned for display: 0, 90, 180 or 270
+	SARNum, SARDen int    // pixel aspect ratio; 0 when unknown (square)
+	ColorPrimaries string // as ffprobe names them: "bt709", "bt2020", "smpte432" (Display P3)...
+	ColorTransfer  string // "bt709", "smpte2084" (PQ), "arib-std-b67" (HLG)...
+}
+
+// sdrChain converts BT.2020 / HDR video to BT.709 SDR (zscale from zimg, tone-mapped when
+// the transfer is PQ or HLG). The input is named explicitly: files often lack some tags,
+// and zscale refuses to guess.
+func (in probeInfo) sdrChain() string {
+	hdr := in.ColorTransfer == "smpte2084" || in.ColorTransfer == "arib-std-b67"
+	first := "zscale=t=linear:npl=100"
+	if in.ColorPrimaries == "bt2020" {
+		first = "zscale=pin=bt2020:min=bt2020nc:rin=tv:t=linear:npl=100"
+	}
+	if hdr {
+		first = strings.Replace(first, "zscale=", "zscale=tin="+in.ColorTransfer+":", 1)
+	}
+	chain := []string{first, "format=gbrpf32le", "zscale=p=bt709"}
+	if hdr {
+		chain = append(chain, "tonemap=tonemap=hable:desat=0")
+	}
+	return strings.Join(append(chain, "zscale=t=bt709:m=bt709:r=tv", "format=yuv420p"), ",")
+}
+
+var (
+	filterMu    sync.Mutex
+	filterCache = map[string]bool{}
+)
+
+// hasFilter reports whether this ffmpeg build has the named filter (cached).
+func hasFilter(ctx context.Context, ffmpeg, name string) bool {
+	filterMu.Lock()
+	defer filterMu.Unlock()
+	key := ffmpeg + "\x00" + name
+	if v, ok := filterCache[key]; ok {
+		return v
+	}
+	out, err := exec.CommandContext(ctx, ffmpeg, "-hide_banner", "-filters").Output()
+	v := err == nil && strings.Contains(string(out), " "+name+" ")
+	if err == nil {
+		filterCache[key] = v
+	}
+	return v
+}
+
+// Display is the size the picture is shown at: turned by Rotation and with square pixels
+// (the width follows the pixel aspect ratio, as a player draws it).
+func (in probeInfo) Display() (w, h int) {
+	w, h = in.Width, in.Height
+	if in.nonSquare() {
+		w = int(math.Round(float64(w) * float64(in.SARNum) / float64(in.SARDen)))
+	}
+	if in.Rotation == 90 || in.Rotation == 270 {
+		w, h = h, w
+	}
+	return w, h
+}
+
+func (in probeInfo) nonSquare() bool {
+	return in.SARNum > 0 && in.SARDen > 0 && in.SARNum != in.SARDen
+}
+
+// wideGamut reports HDR (PQ, HLG) or BT.2020 video: the Pi's player shows it as it is,
+// without the colour management that would map it to a normal screen, so it looks washed
+// out or tinted. It is converted to BT.709 while transcoding (probeInfo.sdrChain).
+func (in probeInfo) wideGamut() bool {
+	return in.ColorTransfer == "smpte2084" || in.ColorTransfer == "arib-std-b67" ||
+		in.ColorPrimaries == "bt2020"
 }
 
 func probe(ctx context.Context, ffprobe, path string) (probeInfo, error) {
@@ -589,6 +702,16 @@ func probe(ctx context.Context, ffprobe, path string) (probeInfo, error) {
 			Width     int    `json:"width"`
 			Height    int    `json:"height"`
 			AvgFPS    string `json:"avg_frame_rate"` // "30000/1001", "0/0" when unknown
+			SAR       string `json:"sample_aspect_ratio"`
+			Primaries string `json:"color_primaries"`
+			Transfer  string `json:"color_transfer"`
+			SideData  []struct {
+				Type     string  `json:"side_data_type"`
+				Rotation float64 `json:"rotation"`
+			} `json:"side_data_list"`
+			Tags struct {
+				Rotate string `json:"rotate"` // older files
+			} `json:"tags"`
 		} `json:"streams"`
 	}
 	if err := json.Unmarshal(out, &r); err != nil {
@@ -601,6 +724,21 @@ func probe(ctx context.Context, ffprobe, path string) (probeInfo, error) {
 		if st.CodecType == "video" && !in.HasVideo {
 			in.HasVideo, in.VideoCodec, in.PixFmt, in.Width, in.Height = true, st.CodecName, st.PixFmt, st.Width, st.Height
 			in.FPS = parseRate(st.AvgFPS)
+			in.ColorPrimaries, in.ColorTransfer = st.Primaries, st.Transfer
+			if n, d, ok := strings.Cut(st.SAR, ":"); ok { // "64:45", "N/A" when unknown
+				in.SARNum, _ = strconv.Atoi(n)
+				in.SARDen, _ = strconv.Atoi(d)
+			}
+			rot := 0.0
+			for _, sd := range st.SideData {
+				if sd.Type == "Display Matrix" {
+					rot = sd.Rotation
+				}
+			}
+			if rot == 0 && st.Tags.Rotate != "" {
+				rot, _ = strconv.ParseFloat(st.Tags.Rotate, 64)
+			}
+			in.Rotation = ((int(math.Round(rot/90))*90)%360 + 360) % 360
 		}
 	}
 	return in, nil

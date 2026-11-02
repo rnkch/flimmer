@@ -14,7 +14,6 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -268,8 +267,7 @@ func (s *Server) icon(w http.ResponseWriter, r *http.Request) {
 	http.ServeFileFS(w, r, s.icons, r.PathValue("name"))
 }
 
-// Serve listens on every address in addrs until ctx ends. "tailscale:PORT"
-// means every Tailscale address of this host; it retries until Tailscale is up.
+// Serve listens on every address in addrs until ctx ends.
 // tlsAddr (if set) serves HTTPS with the self-signed certificate.
 func (s *Server) Serve(ctx context.Context, addrs []string, tlsAddr string) {
 	srv := &http.Server{
@@ -293,10 +291,6 @@ func (s *Server) Serve(ctx context.Context, addrs []string, tlsAddr string) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if port, ok := strings.CutPrefix(a, "tailscale:"); ok {
-				s.serveTailscale(ctx, srv, port)
-				return
-			}
 			s.serveOn(ctx, srv, a)
 		}()
 	}
@@ -347,51 +341,4 @@ func (s *Server) serveOn(ctx context.Context, srv *http.Server, addr string) {
 	if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		slog.Error("web serve", "addr", addr, "err", err)
 	}
-}
-
-var tailnet4 = mustCIDR("100.64.0.0/10")
-var tailnet6 = mustCIDR("fd7a:115c:a1e0::/48")
-
-func mustCIDR(s string) *net.IPNet {
-	_, n, err := net.ParseCIDR(s)
-	if err != nil {
-		panic(err)
-	}
-	return n
-}
-
-func (s *Server) serveTailscale(ctx context.Context, srv *http.Server, port string) {
-	var mu sync.Mutex
-	bound := map[string]bool{}
-	var wg sync.WaitGroup
-	for ctx.Err() == nil {
-		addrs, _ := net.InterfaceAddrs()
-		for _, a := range addrs {
-			ipn, ok := a.(*net.IPNet)
-			if !ok || !(tailnet4.Contains(ipn.IP) || tailnet6.Contains(ipn.IP)) {
-				continue
-			}
-			addr := net.JoinHostPort(ipn.IP.String(), port)
-			mu.Lock()
-			if bound[addr] {
-				mu.Unlock()
-				continue
-			}
-			bound[addr] = true
-			mu.Unlock()
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				s.serveOn(ctx, srv, addr)
-				mu.Lock()
-				delete(bound, addr) // e.g. Tailscale restarted; bind again next round
-				mu.Unlock()
-			}()
-		}
-		select {
-		case <-ctx.Done():
-		case <-time.After(30 * time.Second):
-		}
-	}
-	wg.Wait()
 }

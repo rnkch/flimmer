@@ -40,8 +40,8 @@ func main() {
 		)
 		listen = flag.String(
 			"listen",
-			"127.0.0.1:8080,tailscale:8080",
-			"web UI addresses, comma separated; tailscale:PORT = all Tailscale IPs; empty = off",
+			"127.0.0.1:8080",
+			"plain-HTTP web UI addresses, comma separated; empty = off",
 		)
 		listenTLS = flag.String(
 			"listen-tls",

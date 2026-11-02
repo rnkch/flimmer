@@ -1,6 +1,8 @@
 // Drag and drop reordering for the playlist with native HTML drag events.
 // On drop it posts the new 1-based position; the server answers with the
-// updated list, which htmx swaps in.
+// updated list, which htmx swaps in. While a row is dragged the list is frozen
+// for live updates (hx-morph-skip): a morph would move the rows back under the
+// pointer. The next update, which the end of the drag asks for, catches up.
 export function initSortable() {
   let dragged = null;
 
@@ -9,6 +11,7 @@ export function initSortable() {
     if (!row) return;
     dragged = row;
     row.classList.add('dragging');
+    row.parentElement.setAttribute('hx-morph-skip', '');
     e.dataTransfer.effectAllowed = 'move';
   });
 
@@ -28,8 +31,12 @@ export function initSortable() {
     dragged = null;
     row.classList.remove('dragging');
     const list = row.parentElement;
+    list.removeAttribute('hx-morph-skip');
     const pos = [...list.children].indexOf(row) + 1;
-    if (String(pos) === row.dataset.position) return;
+    if (String(pos) === row.dataset.position) {
+      htmx.trigger(document.body, 'playlist'); // dropped in place: catch up on what was skipped
+      return;
+    }
     htmx.ajax('POST', `/media/${row.dataset.id}/move`, {
       target: list, swap: 'outerMorph', values: { position: pos },
     });

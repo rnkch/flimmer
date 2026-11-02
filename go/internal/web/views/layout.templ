@@ -10,7 +10,7 @@ import (
 templ head(title, css, js string) {
 	<meta charset="utf-8"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
-	<meta name="htmx-config" content='{"extensions": "sse, alpine-compat"}'/>
+	<meta name="htmx-config" content='{"extensions": "sse, alpine-compat, keep-overlays"}'/>
 	<title>{ title } · Flimmerkiste</title>
 	<!-- Follow the OS color scheme before first paint (theme.css has both). -->
 	<script>document.documentElement.classList.add(matchMedia('(prefers-color-scheme: dark)').matches ? 'wa-dark' : 'wa-light')</script>

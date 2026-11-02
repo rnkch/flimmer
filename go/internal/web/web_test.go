@@ -270,3 +270,21 @@ func TestEventsOpenWithBootID(t *testing.T) {
 		t.Fatal("two starts share a boot id")
 	}
 }
+
+// The htmx extensions a page uses must be named in its htmx-config: htmx silently
+// ignores an extension that isn't (app.js registers "keep-overlays").
+func TestPagesEnableTheirHtmxExtensions(t *testing.T) {
+	s, _ := newServer(t)
+	rec := httptest.NewRecorder()
+	s.Handler().ServeHTTP(rec, httptest.NewRequest("GET", "/login", nil))
+	m := regexp.MustCompile(`name="htmx-config" content='([^']*)'`).
+		FindStringSubmatch(rec.Body.String())
+	if m == nil {
+		t.Fatalf("no htmx-config meta:\n%s", rec.Body.String())
+	}
+	for _, ext := range []string{"sse", "alpine-compat", "keep-overlays"} {
+		if !strings.Contains(m[1], ext) {
+			t.Errorf("htmx-config %q doesn't enable %q", m[1], ext)
+		}
+	}
+}

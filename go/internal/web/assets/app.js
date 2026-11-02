@@ -52,6 +52,17 @@ initDropUpload();
 // Inline editors arrive with [autofocus]; focus them after the swap.
 htmx.onLoad((elt) => elt.querySelector?.('[autofocus]')?.focus());
 
+// Live updates morph fragments with freshly rendered HTML. Overlays keep their open state in a
+// reflected `open` attribute that the server's HTML never carries, so a morph would close a row
+// menu or a tooltip the user has open (and the player card and playlist are morphed every
+// time the next entry starts). What the user has open stays open. The extension must also be
+// named in the htmx-config meta of the layout.
+const overlays = 'wa-dropdown, wa-popover, wa-tooltip, wa-dialog';
+htmx.registerExtension('keep-overlays', {
+  htmx_before_morph_attr: (elt, { attrName }) =>
+    attrName === 'open' && elt.matches?.(overlays) ? false : undefined,
+});
+
 // The server restarts itself (an upgrade, "Restart service", /upgrade or /restart in
 // Telegram) or crashes, and the page is stale then: a new version, maybe new asset names.
 // Two ways to notice, both ending in one reload:

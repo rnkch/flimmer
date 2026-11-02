@@ -35,6 +35,12 @@ templ URLPreview(info kiosk.URLInfo) {
 						}
 					</div>
 				</div>
+				if info.PlaylistCount > 0 {
+					<wa-callout variant="neutral" size="s">
+						<wa-icon slot="icon" name="list"></wa-icon>
+						{ t(ctx, "This link is a playlist with %d videos. Only its first video is added; paste a video's own link for another one.", info.PlaylistCount) }
+					</wa-callout>
+				}
 				if info.Unprobed != "" {
 					<wa-callout variant="warning" size="s">
 						<wa-icon slot="icon" name="triangle-exclamation"></wa-icon>

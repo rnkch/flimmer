@@ -37,7 +37,11 @@ type URLInfo struct {
 	Live      bool        // can only be played directly, not downloaded
 	Formats   []URLFormat // video formats, lowest resolution first
 	Auto      string      // Spec of the format chosen for the CRT
-	Unprobed  string      // yt-dlp's complaint when it couldn't list formats; the link may still play
+	// The link was a playlist (a series page, a channel): this is its first video, which is
+	// also what mpv would play. PlaylistCount is the number of videos in it.
+	PlaylistTitle string
+	PlaylistCount int
+	Unprobed      string // yt-dlp's complaint when it couldn't list formats; the link may still play
 }
 
 // ProbeError is yt-dlp failing to analyse a URL. mpv's own yt-dlp hook often still manages, so
@@ -121,16 +125,80 @@ func (s *Service) ProbeURL(ctx context.Context, url string) (URLInfo, error) {
 		Output()
 	if err != nil {
 		var ee *exec.ExitError
-		if errors.As(err, &ee) {
-			return URLInfo{}, &ProbeError{Msg: lastLine(ee.Stderr)}
+		if !errors.As(err, &ee) {
+			return URLInfo{}, fmt.Errorf("yt-dlp: %w", err)
 		}
-		return URLInfo{}, fmt.Errorf("yt-dlp: %w", err)
+		// A playlist with one broken video makes yt-dlp exit with an error, yet it still prints
+		// the playlist: that is a playlist, not a failure.
+		var pl ytInfo
+		if json.Unmarshal(out, &pl) == nil && (pl.Type == "playlist" || pl.Type == "multi_video") {
+			return s.probeFirstOfPlaylist(ctx, url)
+		}
+		return URLInfo{}, &ProbeError{Msg: lastLine(ee.Stderr)}
 	}
 	var yi ytInfo
 	if err := json.Unmarshal(out, &yi); err != nil {
 		return URLInfo{}, err
 	}
-	return chooseFormats(url, yi)
+	info, err := chooseFormats(url, yi)
+	if errors.Is(err, ErrPlaylist) {
+		return s.probeFirstOfPlaylist(ctx, url)
+	}
+	return info, err
+}
+
+// probeFirstOfPlaylist handles a link that turns out to be a playlist (arte.tv series pages
+// and the like): it takes the first video, as mpv does when it is given such a link, and says
+// how many there are. yt-dlp lists the entries without opening them (--flat-playlist).
+func (s *Service) probeFirstOfPlaylist(ctx context.Context, link string) (URLInfo, error) {
+	out, err := exec.CommandContext(ctx, s.cfg.YtDlp, "-J", "--flat-playlist", "--no-warnings", "--", link).
+		Output()
+	if err != nil {
+		return URLInfo{}, ErrPlaylist
+	}
+	var list struct {
+		Title   string `json:"title"`
+		Entries []struct {
+			URL string `json:"url"`
+		} `json:"entries"`
+	}
+	if json.Unmarshal(out, &list) != nil || len(list.Entries) == 0 || list.Entries[0].URL == "" ||
+		list.Entries[0].URL == link {
+		return URLInfo{}, ErrPlaylist
+	}
+	// The first video, or the next one when it can't be opened (unavailable, geo-blocked).
+	var lastErr error = ErrPlaylist
+	for i, e := range list.Entries {
+		if i == 3 || e.URL == "" {
+			break
+		}
+		info, err := s.probeEntry(ctx, e.URL)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		info.PlaylistTitle, info.PlaylistCount = list.Title, len(list.Entries)
+		return info, nil
+	}
+	return URLInfo{}, lastErr
+}
+
+// probeEntry analyses one video of a playlist.
+func (s *Service) probeEntry(ctx context.Context, first string) (URLInfo, error) {
+	out, err := exec.CommandContext(ctx, s.cfg.YtDlp, "-J", "--no-playlist", "--no-warnings", "--", first).
+		Output()
+	if err != nil {
+		var ee *exec.ExitError
+		if errors.As(err, &ee) {
+			return URLInfo{}, &ProbeError{Msg: lastLine(ee.Stderr)}
+		}
+		return URLInfo{}, err
+	}
+	var yi ytInfo
+	if err := json.Unmarshal(out, &yi); err != nil {
+		return URLInfo{}, err
+	}
+	return chooseFormats(first, yi)
 }
 
 // chooseFormats builds the format list and picks the automatic choice:

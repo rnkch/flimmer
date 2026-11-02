@@ -973,3 +973,25 @@ func TestCycleSubtitlesWithMpv(t *testing.T) {
 		t.Fatalf("cycle: %q", got)
 	}
 }
+
+// A series page is a playlist for yt-dlp; the first video is added, with a note.
+func TestProbeURLPlaylistTakesFirstVideo(t *testing.T) {
+	s, _ := newTestService(t)
+	fake := filepath.Join(t.TempDir(), "yt-dlp")
+	os.WriteFile(fake, []byte(`#!/bin/sh
+case "$*" in
+*--flat-playlist*) echo '{"_type":"playlist","title":"Series","entries":[{"url":"https://x.test/v/1"},{"url":"https://x.test/v/2"}]}' ;;
+*https://x.test/v/1) echo '{"title":"First","webpage_url":"https://x.test/v/1","duration":60,"formats":[{"format_id":"v","vcodec":"avc1.4d","acodec":"mp4a.40.2","height":720,"fps":25}]}' ;;
+*) echo '{"_type":"playlist","title":"Series","entries":[{},{}]}' ;;
+esac
+`), 0o755)
+	s.cfg.YtDlp = fake
+	info, err := s.ProbeURL(context.Background(), "https://x.test/series")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Title != "First" || info.URL != "https://x.test/v/1" || info.PlaylistCount != 2 ||
+		len(info.Formats) != 1 {
+		t.Fatalf("%+v", info)
+	}
+}

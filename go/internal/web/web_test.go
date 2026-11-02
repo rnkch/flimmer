@@ -288,3 +288,61 @@ func TestPagesEnableTheirHtmxExtensions(t *testing.T) {
 		}
 	}
 }
+
+// Tabs and the other links to a page are partial navigations: the href stays (new tab,
+// no JavaScript), htmx takes over the plain click and swaps only <main id="page">, and
+// every page has exactly one #page and one #topnav for htmx to select.
+func TestNavigationIsPartial(t *testing.T) {
+	s, k := newServer(t)
+	token, err := k.Login(context.Background(), "test-password-123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	get := func(path string, htmx bool) string {
+		t.Helper()
+		req := httptest.NewRequest("GET", path, nil)
+		req.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
+		if htmx { // the navigation request: the full page comes back, htmx selects #page
+			req.Header.Set("HX-Request", "true")
+		}
+		rec := httptest.NewRecorder()
+		s.Handler().ServeHTTP(rec, req)
+		if rec.Code != 200 {
+			t.Fatalf("%s: %d", path, rec.Code)
+		}
+		return rec.Body.String()
+	}
+	for _, path := range []string{"/playlist", "/add", "/system", "/settings"} {
+		for _, htmx := range []bool{false, true} {
+			body := get(path, htmx)
+			if n := strings.Count(body, `id="page"`); n != 1 {
+				t.Errorf("%s (htmx %v): %d elements with id=page, want 1", path, htmx, n)
+			}
+			if n := strings.Count(body, `id="topnav"`); n != 1 {
+				t.Errorf("%s (htmx %v): %d elements with id=topnav, want 1", path, htmx, n)
+			}
+			if !strings.Contains(body, "<title>") {
+				t.Errorf("%s (htmx %v): no <title> for htmx to take over", path, htmx)
+			}
+		}
+	}
+	body := get("/playlist", false)
+	for _, href := range []string{"/playlist", "/add", "/system", "/settings"} {
+		if !strings.Contains(body, `hx-get="`+href+`"`) {
+			t.Errorf("no partial navigation for %s", href)
+		}
+		if !strings.Contains(body, `href="`+href+`"`) {
+			t.Errorf("the link to %s lost its href", href)
+		}
+	}
+	for _, attr := range []string{
+		`hx-target="#page"`, `hx-select="#page"`, `hx-select-oob="#topnav:outerMorph"`,
+		`hx-push-url="true"`, `hx-swap="outerHTML show:top"`,
+		// a modifier-key click is left to the browser; the plain one is cancelled
+		`hx-trigger="click[button===0&amp;&amp;!ctrlKey&amp;&amp;!metaKey&amp;&amp;!shiftKey&amp;&amp;!altKey] prevent"`,
+	} {
+		if !strings.Contains(body, attr) {
+			t.Errorf("page lacks %s", attr)
+		}
+	}
+}

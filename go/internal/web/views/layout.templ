@@ -47,15 +47,15 @@ templ Layout(p Page) {
 				<div class="topbar-inner">
 					@BrandName(p.Name, p.NameSet, p.Hue)
 					@LockButton(p.Locked)
-					<nav class="wa-cluster wa-gap-3xs">
+					<nav id="topnav" class="wa-cluster wa-gap-3xs">
 						for _, n := range nav {
 							if n.Key == p.Active {
-								<wa-button href={ n.Href } size="s" appearance="filled" variant="brand" aria-current="page">
+								<wa-button href={ n.Href } { pageLink(n.Href)... } size="s" appearance="filled" variant="brand" aria-current="page">
 									<wa-icon slot="start" name={ n.Icon } label={ t(ctx, n.Label) }></wa-icon>
 									<span class="label">{ t(ctx, n.Label) }</span>
 								</wa-button>
 							} else {
-								<wa-button href={ n.Href } size="s" appearance="plain">
+								<wa-button href={ n.Href } { pageLink(n.Href)... } size="s" appearance="plain">
 									<wa-icon slot="start" name={ n.Icon } label={ t(ctx, n.Label) }></wa-icon>
 									<span class="label">{ t(ctx, n.Label) }</span>
 								</wa-button>
@@ -75,7 +75,7 @@ templ Layout(p Page) {
 			<!-- Live updates: unnamed messages carry <hx-partial>s, named events
 			     ("player", "playlist", "job", ...) bubble to body for hx-trigger="... from:body". -->
 			<div hx-sse:connect="/events" hidden></div>
-			<main class="shell wa-stack wa-gap-m">
+			<main id="page" class="shell wa-stack wa-gap-m">
 				{ children... }
 			</main>
 			<wa-toast placement="bottom-end"></wa-toast>
@@ -126,7 +126,7 @@ templ PageHead(title string) {
 // closes without saving and resets the field.
 templ BrandName(name, set, hue string) {
 	<div id="brand" class="brand" style={ hueColor(nameHue(name, hue)) }>
-		<a class="wa-link-plain" href="/playlist"><wa-icon name="tv" label={ t(ctx, "Playlist") }></wa-icon></a>
+		<a class="wa-link-plain" href="/playlist" { pageLink("/playlist")... }><wa-icon name="tv" label={ t(ctx, "Playlist") }></wa-icon></a>
 		<button id="brand-name" type="button" class="editable" title={ name + " – " + t(ctx, "Click to rename this kiosk") }>{ name }</button>
 		<wa-popover for="brand-name" placement="bottom-start" class="brand-popover"
 			hx-on:wa-after-show="const i = this.querySelector('wa-input'); i.focus(); i.select()"
@@ -149,7 +149,7 @@ templ BrandName(name, set, hue string) {
 }
 
 templ NowPlayingBar(n NowPlaying) {
-	<a id="now-playing" class="now-playing" href="/playlist">
+	<a id="now-playing" class="now-playing" href="/playlist" { pageLink("/playlist")... }>
 		switch {
 			case n.Streaming != "":
 				<wa-icon name="tower-broadcast"></wa-icon>

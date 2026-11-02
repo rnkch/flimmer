@@ -101,6 +101,27 @@ func downloadable(m db.Media) bool {
 	return m.Kind == "stream" && m.DurationS > 0 && !kiosk.IsDirectStream(m.URL)
 }
 
+// pageLink makes a link a partial navigation: htmx fetches the page and swaps only
+// <main id="page"> (the header with its live connection, the icon cache and the
+// components stay), updates the title and the address, and refreshes the tabs
+// (#topnav) for the new active page. The href stays, so middle-click, no JavaScript
+// and screen readers work as before. The trigger is for <wa-button href>: its anchor
+// lives in a shadow root, where htmx can't see it to cancel the native navigation, so
+// "prevent" cancels it (after the filter: a click with a modifier key, which asks for a
+// new tab or window, is left to the browser). The filter has no spaces: it sits inside
+// a trigger specification.
+func pageLink(href string) templ.Attributes {
+	return templ.Attributes{
+		"hx-get":        href,
+		"hx-push-url":   "true",
+		"hx-target":     "#page",
+		"hx-select":     "#page",
+		"hx-select-oob": "#topnav:outerMorph",
+		"hx-swap":       "outerHTML show:top",
+		"hx-trigger":    "click[button===0&&!ctrlKey&&!metaKey&&!shiftKey&&!altKey] prevent",
+	}
+}
+
 // nav labels are translation keys.
 var nav = []struct{ Key, Href, Icon, Label string }{
 	{"playlist", "/playlist", "list", "Playlist"},

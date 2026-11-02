@@ -10,7 +10,7 @@ templ PlaylistPage(p Page, list []db.Media, currentID int64, activeJobs int) {
 		@PageHead("Playlist") {
 			<wa-spinner id="playlist-busy" class="htmx-indicator"></wa-spinner>
 			@PlaylistSummary(list, activeJobs)
-			<wa-button href="/add" size="s" variant="brand">
+			<wa-button href="/add" { pageLink("/add")... } size="s" variant="brand">
 				<wa-icon slot="start" name="plus"></wa-icon> { t(ctx, "Add") }
 			</wa-button>
 		}
@@ -47,7 +47,7 @@ templ PlaylistList(list []db.Media, currentID int64) {
 				<wa-icon name="film" class="empty-icon"></wa-icon>
 				<span class="wa-heading-s">{ t(ctx, "Nothing playing yet") }</span>
 				<span class="wa-caption-s">{ t(ctx, "Drop images or videos here, or add a file or link.") }</span>
-				<wa-button href="/add" variant="brand" size="s"><wa-icon slot="start" name="plus"></wa-icon> { t(ctx, "Add something") }</wa-button>
+				<wa-button href="/add" { pageLink("/add")... } variant="brand" size="s"><wa-icon slot="start" name="plus"></wa-icon> { t(ctx, "Add something") }</wa-button>
 			</li>
 		}
 		for _, m := range list {

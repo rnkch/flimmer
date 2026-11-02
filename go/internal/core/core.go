@@ -1,6 +1,6 @@
-// Package kiosk is the core of the service. The Telegram bot and the web UI
+// Package core is the core of the service. The Telegram bot and the web UI
 // both call into it; it is the only place that changes playlist state.
-package kiosk
+package core
 
 import (
 	"context"
@@ -288,7 +288,7 @@ func (s *Service) SetDisplayName(ctx context.Context, name string) error {
 }
 
 // NameHues are the palette's hue families the header name can take; the
-// theme has a readable shade of each per color scheme (--kiosk-hue-*).
+// theme has a readable shade of each per color scheme (--fk-hue-*).
 var NameHues = []string{
 	"red",
 	"orange",

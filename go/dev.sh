@@ -25,4 +25,4 @@ go tool templ generate ./internal/web/views >/dev/null
 export FLIMMERKISTE_WEB_PASSWORD=${FLIMMERKISTE_WEB_PASSWORD:-flimmerkiste-dev-password}
 exec go run ./cmd/flimmerkiste -credentials "" -listen 127.0.0.1:8090 -listen-tls 127.0.0.1:8453 \
     -media "$DIR/media" -data "$DIR/data" -mpv-socket "$DIR/mpv.sock" \
-    -encoder libx264 -nmcli "bash internal/kiosk/testdata/fake-nmcli" -mpv-args "${MPV_ARGS:---no-config --vo=null --ao=null}" "$@"
+    -encoder libx264 -nmcli "bash internal/core/testdata/fake-nmcli" -mpv-args "${MPV_ARGS:---no-config --vo=null --ao=null}" "$@"

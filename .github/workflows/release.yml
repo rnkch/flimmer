@@ -1,6 +1,6 @@
 # Pushing a tag like v0.2.0 builds flimmerkiste and publishes a GitHub release:
 # one binary per platform plus checksums.txt. Installed Flimmerkiste devices pick that up
-# with /upgrade in Telegram or the System page (internal/kiosk/upgrade.go).
+# with /upgrade in Telegram or the System page (internal/core/upgrade.go).
 #
 #   git tag v0.2.0 && git push origin v0.2.0
 #
@@ -30,7 +30,7 @@ jobs:
           mkdir ../dist
           for arch in arm64 amd64; do
             GOOS=linux GOARCH=$arch CGO_ENABLED=0 go build -trimpath \
-              -ldflags "-s -w -X github.com/rnkch/flimmerkiste/internal/kiosk.releaseVersion=${GITHUB_REF_NAME}" \
+              -ldflags "-s -w -X github.com/rnkch/flimmerkiste/internal/core.releaseVersion=${GITHUB_REF_NAME}" \
               -o ../dist/flimmerkiste-linux-$arch ./cmd/flimmerkiste
           done
           cd ../dist

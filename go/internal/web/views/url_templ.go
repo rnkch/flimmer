@@ -13,14 +13,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/core"
 	"github.com/rnkch/flimmerkiste/internal/store/db"
 )
 
 // URLPreview fills the add form after "Check": the preview with the format
 // choice goes to #url-result, the buttons to #url-actions. Both are inside
 // the add form, so name, position and duration are posted with them.
-func URLPreview(info kiosk.URLInfo) templ.Component {
+func URLPreview(info core.URLInfo) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -381,7 +381,7 @@ func URLPreview(info kiosk.URLInfo) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if !kiosk.IsDirectStream(info.URL) {
+		if !core.IsDirectStream(info.URL) {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<wa-callout variant=\"warning\" size=\"s\"><wa-icon slot=\"icon\" name=\"triangle-exclamation\"></wa-icon> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -408,7 +408,7 @@ func URLPreview(info kiosk.URLInfo) templ.Component {
 	})
 }
 
-func formatSelect(info kiosk.URLInfo, selected string) templ.Component {
+func formatSelect(info core.URLInfo, selected string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -555,7 +555,7 @@ func formatSelect(info kiosk.URLInfo, selected string) templ.Component {
 }
 
 // FormatDialog changes the format of a stream entry.
-func FormatDialog(m db.Media, info kiosk.URLInfo, current string) templ.Component {
+func FormatDialog(m db.Media, info core.URLInfo, current string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -642,14 +642,14 @@ func FormatDialog(m db.Media, info kiosk.URLInfo, current string) templ.Componen
 
 // formatValue carries size and height along with the spec: the disk check
 // needs the size, a stream's fallback rule the height.
-func formatValue(info kiosk.URLInfo, spec string) string {
+func formatValue(info core.URLInfo, spec string) string {
 	if f, ok := info.Format(spec); ok {
 		return fmt.Sprintf("%s %d %d", f.Spec, f.Size, f.Height)
 	}
 	return spec + " 0 0"
 }
 
-func formatLabel(ctx context.Context, f kiosk.URLFormat) string {
+func formatLabel(ctx context.Context, f core.URLFormat) string {
 	if f.Height == 0 {
 		return t(ctx, "Best available")
 	}

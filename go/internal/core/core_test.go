@@ -1,4 +1,4 @@
-package kiosk
+package core
 
 import (
 	"bytes"
@@ -631,9 +631,9 @@ func TestParseProgress(t *testing.T) {
 		pct  float64
 		ok   bool
 	}{
-		{"KIOSKPROGRESS mp4   0.0%", "mp4", 0, true}, // as yt-dlp 2026.08 prints it
-		{"KIOSKPROGRESS 298  42.5%", "298", 42.5, true},
-		{"KIOSKPROGRESS mp4 N/A", "", 0, false}, // server sent no size
+		{"FLIMMERPROGRESS mp4   0.0%", "mp4", 0, true}, // as yt-dlp 2026.08 prints it
+		{"FLIMMERPROGRESS 298  42.5%", "298", 42.5, true},
+		{"FLIMMERPROGRESS mp4 N/A", "", 0, false}, // server sent no size
 		{"[download] Destination: x.mp4", "", 0, false},
 		{"download:mp4 3.0%", "", 0, false},
 	} {

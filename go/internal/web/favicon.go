@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/core"
 )
 
 // defaultFaviconColor is Tokyo Night's blue: the colour of the PNG icons.
@@ -32,7 +32,7 @@ func huePalette(fsys fs.FS) map[string]string {
 func (s *Server) nameColor(ctx context.Context) string {
 	hue := s.k.DisplayHue(ctx)
 	if hue == "" {
-		hue = kiosk.HashHue(s.k.DisplayName(ctx))
+		hue = core.HashHue(s.k.DisplayName(ctx))
 	}
 	if c, ok := s.hues[hue]; ok {
 		return c

@@ -1,4 +1,4 @@
-package kiosk
+package core
 
 import (
 	"context"

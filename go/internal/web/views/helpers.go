@@ -13,7 +13,7 @@ import (
 
 	"github.com/a-h/templ"
 
-	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/core"
 	"github.com/rnkch/flimmerkiste/internal/store/db"
 	"github.com/rnkch/flimmerkiste/internal/web/i18n"
 )
@@ -46,7 +46,7 @@ type Page struct {
 	Now     NowPlaying
 	Name    string // display name in the header (setting, or the hostname)
 	NameSet string // the stored name, "" while the hostname is shown
-	Locked  bool   // playback locked (kiosk.SettingLocked)
+	Locked  bool   // playback locked (core.SettingLocked)
 	Hue     string // its chosen color, "" = from a hash of the name
 	Favicon string // the favicon's address (in the display's color)
 }
@@ -99,7 +99,7 @@ func streamSource(m db.Media) string {
 
 // downloadable: a stream that has an end and can be fetched with yt-dlp.
 func downloadable(m db.Media) bool {
-	return m.Kind == "stream" && m.DurationS > 0 && !kiosk.IsDirectStream(m.URL)
+	return m.Kind == "stream" && m.DurationS > 0 && !core.IsDirectStream(m.URL)
 }
 
 // assetVersion is the content hash in the bundle's file name ("app.3f2a9c1d.js"). It
@@ -188,7 +188,7 @@ func jobName(j db.Job) string {
 // disabledCount is how many entries are switched off.
 func disabledCount(list []db.Media) (n int) {
 	for _, m := range list {
-		if !kiosk.Enabled(m) {
+		if !core.Enabled(m) {
 			n++
 		}
 	}
@@ -200,7 +200,7 @@ func disabledCount(list []db.Media) (n int) {
 func loopSeconds(list []db.Media) float64 {
 	var s float64
 	for _, m := range list {
-		if !kiosk.Enabled(m) {
+		if !core.Enabled(m) {
 			continue
 		}
 		switch m.Kind {
@@ -255,7 +255,7 @@ func vals(kv ...string) string {
 }
 
 // signalClass grades a network's signal for the Wi-Fi icon.
-func signalClass(n kiosk.WifiNetwork) string {
+func signalClass(n core.WifiNetwork) string {
 	switch {
 	case !n.InRange:
 		return "signal none"
@@ -267,7 +267,7 @@ func signalClass(n kiosk.WifiNetwork) string {
 	return "signal weak"
 }
 
-func signalLabel(ctx context.Context, n kiosk.WifiNetwork) string {
+func signalLabel(ctx context.Context, n core.WifiNetwork) string {
 	if !n.InRange {
 		return t(ctx, "not in range")
 	}
@@ -295,24 +295,24 @@ func seekAttrs(n NowPlaying) templ.Attributes {
 }
 
 // hostname and maxNameLen: placeholder and limit of the display name editor.
-func hostname() string { return kiosk.Hostname() }
+func hostname() string { return core.Hostname() }
 
-const maxNameLen = kiosk.DisplayNameMax
+const maxNameLen = core.DisplayNameMax
 
 // nameHue is the color of the header name: chosen, or from the name's hash.
 func nameHue(name, chosen string) string {
 	if chosen != "" {
 		return chosen
 	}
-	return kiosk.HashHue(name)
+	return core.HashHue(name)
 }
 
 func hueColor(hue string) templ.SafeCSS {
-	return templ.SafeCSS("color: var(--kiosk-hue-" + hue + ");")
+	return templ.SafeCSS("color: var(--fk-hue-" + hue + ");")
 }
 
 func hueSwatch(hue string) templ.SafeCSS {
-	return templ.SafeCSS("background: var(--kiosk-hue-" + hue + ");")
+	return templ.SafeCSS("background: var(--fk-hue-" + hue + ");")
 }
 
 // hueLabels are translation keys for the color dots' tooltips.
@@ -328,6 +328,6 @@ var hueLabels = map[string]string{
 	"pink":   "Pink",
 }
 
-var nameHueList = kiosk.NameHues
+var nameHueList = core.NameHues
 
 func boolStr(b bool) string { return strconv.FormatBool(b) }

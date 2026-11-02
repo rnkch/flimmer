@@ -10,7 +10,7 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/core"
 	"github.com/rnkch/flimmerkiste/internal/store/db"
 )
 
@@ -423,7 +423,7 @@ func MediaRow(m db.Media, current bool, edit string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var19 = []any{templ.KV("current", current), templ.KV("editing", edit != ""), templ.KV("off", !kiosk.Enabled(m))}
+			var templ_7745c5c3_Var19 = []any{templ.KV("current", current), templ.KV("editing", edit != ""), templ.KV("off", !core.Enabled(m))}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var19...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -792,7 +792,7 @@ func MediaRow(m db.Media, current bool, edit string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		if !kiosk.Enabled(m) {
+		if !core.Enabled(m) {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 61, "<span class=\"off-note wa-caption-xs\"><wa-icon name=\"eye-slash\"></wa-icon> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1058,7 +1058,7 @@ func MediaRow(m db.Media, current bool, edit string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if kiosk.Enabled(m) {
+		if core.Enabled(m) {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "<wa-dropdown-item class=\"disturbs\" hx-post=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1090,7 +1090,7 @@ func MediaRow(m db.Media, current bool, edit string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		if kiosk.Enabled(m) {
+		if core.Enabled(m) {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "<wa-dropdown-item class=\"disturbs-current\" hx-post=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err

@@ -18,7 +18,7 @@ import (
 
 	"github.com/rnkch/flimmerkiste/internal/access"
 	"github.com/rnkch/flimmerkiste/internal/bot"
-	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/core"
 	"github.com/rnkch/flimmerkiste/internal/mpv"
 	"github.com/rnkch/flimmerkiste/internal/store"
 	"github.com/rnkch/flimmerkiste/internal/web"
@@ -68,12 +68,12 @@ func main() {
 		)
 		fallback = flag.String(
 			"fallback-wifi",
-			kiosk.DefaultFallbackWifi,
+			core.DefaultFallbackWifi,
 			"ssid:password saved once as the lowest-priority Wi-Fi (e.g. a phone hotspot); empty = none",
 		)
 		updRepo = flag.String(
 			"update-repo",
-			kiosk.DefaultUpdateRepo,
+			core.DefaultUpdateRepo,
 			"GitHub owner/name whose releases the web UI and /upgrade install; empty = updates off",
 		)
 		showVer  = flag.Bool("version", false, "print the version and exit")
@@ -81,7 +81,7 @@ func main() {
 	)
 	flag.Parse()
 	if *showVer {
-		fmt.Println(kiosk.Version())
+		fmt.Println(core.Version())
 		return
 	}
 	if *mediaDir == "" {
@@ -145,7 +145,7 @@ func run(
 	defer st.Close()
 
 	_, hdmiErr := os.Stat(hdmiFlag)
-	cfg := kiosk.Config{
+	cfg := core.Config{
 		MediaDir:      mediaDir,
 		TmpDir:        tmpDir,
 		ThumbDir:      thumbDir,
@@ -170,7 +170,7 @@ func run(
 			[]string{"--loop-playlist=inf", "--image-display-duration=5"},
 			strings.Fields(mpvArgs)...),
 	}
-	k := kiosk.New(cfg, st, player)
+	k := core.New(cfg, st, player)
 	if k.CheckPendingUpgrade() {
 		return errors.New("the new version didn't stay up; went back to the previous one")
 	}

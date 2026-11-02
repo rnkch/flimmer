@@ -1,6 +1,6 @@
 // Package web serves the browser UI: templ pages, htmx fragments, an SSE
 // stream for live updates and large uploads. All actions go through
-// kiosk.Service, like the Telegram bot.
+// core.Service, like the Telegram bot.
 package web
 
 import (
@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/rnkch/flimmerkiste/internal/access"
-	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/core"
 	"github.com/rnkch/flimmerkiste/internal/web/bundle"
 	"github.com/rnkch/flimmerkiste/internal/web/i18n"
 	"github.com/rnkch/flimmerkiste/internal/web/views"
@@ -27,10 +27,10 @@ import (
 //go:embed assets vendor
 var files embed.FS
 
-const sessionCookie = "kiosk_session"
+const sessionCookie = "flimmerkiste_session"
 
 type Server struct {
-	k      *kiosk.Service
+	k      *core.Service
 	certs  *access.Certs // nil without HTTPS
 	bundle bundle.Result
 	icons  fs.FS
@@ -47,7 +47,7 @@ type Server struct {
 }
 
 // New bundles the browser assets (esbuild, in memory) and prepares routes.
-func New(k *kiosk.Service, certs *access.Certs) (*Server, error) {
+func New(k *core.Service, certs *access.Certs) (*Server, error) {
 	start := time.Now()
 	res, err := bundle.Build(files)
 	if err != nil {
@@ -203,7 +203,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		s.loginMu.Unlock()
 		s.k.Logf(r.Context(), slog.LevelWarn, "web login failed", "remote", r.RemoteAddr)
 		w.WriteHeader(http.StatusUnauthorized)
-		views.Login(s.bundle.CSS.Name, s.bundle.JS.Name, "Wrong password.", errors.Is(err, kiosk.ErrNoWebPassword)).
+		views.Login(s.bundle.CSS.Name, s.bundle.JS.Name, "Wrong password.", errors.Is(err, core.ErrNoWebPassword)).
 			Render(r.Context(), w)
 		return
 	}
@@ -213,7 +213,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name: sessionCookie, Value: token, Path: "/", HttpOnly: true,
 		SameSite: http.SameSiteStrictMode, Secure: r.TLS != nil,
-		MaxAge: int(kiosk.SessionTTL.Seconds()),
+		MaxAge: int(core.SessionTTL.Seconds()),
 	})
 	http.Redirect(w, r, "/playlist", http.StatusSeeOther)
 }

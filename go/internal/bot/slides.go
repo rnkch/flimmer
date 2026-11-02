@@ -13,7 +13,7 @@ import (
 	tg "github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 
-	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/core"
 	"github.com/rnkch/flimmerkiste/internal/store/db"
 	"github.com/rnkch/flimmerkiste/internal/sysinfo"
 )
@@ -37,7 +37,7 @@ func (bt *Bot) showSlides(ctx context.Context, chatID int64, msgID int, page int
 	for _, m := range list[(page-1)*pageSize : min(page*pageSize, len(list))] {
 		id := strconv.FormatInt(m.ID, 10)
 		icon := map[string]string{"image": "🖼", "video": "🎞", "stream": "📡"}[m.Kind]
-		if !kiosk.Enabled(m) {
+		if !core.Enabled(m) {
 			icon = "⏸" // stays in the list, is not played
 		}
 		rows = append(rows, []models.InlineKeyboardButton{
@@ -77,7 +77,7 @@ func (bt *Bot) showSlides(ctx context.Context, chatID int64, msgID int, page int
 
 func countEnabled(list []db.Media) (n int) {
 	for _, m := range list {
-		if kiosk.Enabled(m) {
+		if core.Enabled(m) {
 			n++
 		}
 	}
@@ -147,7 +147,7 @@ func (bt *Bot) onCallback(ctx context.Context, q *models.CallbackQuery) {
 			delta = 1
 		}
 		err := bt.k.MoveBy(ctx, id, delta)
-		if errors.Is(err, kiosk.ErrCannotMove) {
+		if errors.Is(err, core.ErrCannotMove) {
 			answer("Geht nicht weiter", true)
 			return
 		}
@@ -176,13 +176,13 @@ func (bt *Bot) onCallback(ctx context.Context, q *models.CallbackQuery) {
 	case "toggle":
 		m, err := bt.k.Get(ctx, id)
 		if err == nil {
-			err = bt.k.SetEnabled(ctx, id, !kiosk.Enabled(m))
+			err = bt.k.SetEnabled(ctx, id, !core.Enabled(m))
 		}
 		if err != nil {
 			answer(warn(err), true)
 			return
 		}
-		if kiosk.Enabled(m) { // it was on: now off
+		if core.Enabled(m) { // it was on: now off
 			answer("Ausgeschaltet: wird übersprungen", false)
 		} else {
 			answer("Eingeschaltet", false)
@@ -219,11 +219,11 @@ func (bt *Bot) showActions(ctx context.Context, chatID int64, msgID int, id int6
 		},
 		{{Text: "Back to slides", CallbackData: "act:back:" + sid}},
 	}
-	if !kiosk.Enabled(m) {
+	if !core.Enabled(m) {
 		rows[1][0].Text = "Enable"
 	}
 	info := fmt.Sprintf("✏️ \"%s\"\nPosition %d · ", m.Title, m.Position)
-	if !kiosk.Enabled(m) {
+	if !core.Enabled(m) {
 		info = fmt.Sprintf(
 			"⏸ \"%s\" (ausgeschaltet, wird übersprungen)\nPosition %d · ",
 			m.Title,
@@ -295,7 +295,7 @@ func (bt *Bot) statusText(ctx context.Context) string {
 	si := sysinfo.Read(ctx, bt.k.Config().MediaDir)
 	var b strings.Builder
 	host, _ := os.Hostname()
-	fmt.Fprintf(&b, "📺 %s · Version %s\n", host, kiosk.Version())
+	fmt.Fprintf(&b, "📺 %s · Version %s\n", host, core.Version())
 	if bt.k.Locked(ctx) {
 		b.WriteString("🔒 Gesperrt (entsperren: /lock)\n")
 	}

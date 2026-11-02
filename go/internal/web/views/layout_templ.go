@@ -550,7 +550,7 @@ func Layout(p Page) templ.Component {
 	})
 }
 
-// LockButton locks playback (kiosk.SettingLocked): nothing that would
+// LockButton locks playback (core.SettingLocked): nothing that would
 // interrupt it works until it's unlocked. The controls it blocks carry class
 // "disturbs" (or "disturbs-current" in the playing row); app.css greys them
 // out while #lock has data-locked. Refreshes on the "settings" event, so

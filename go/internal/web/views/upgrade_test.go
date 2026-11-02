@@ -6,12 +6,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/core"
 )
 
 // Without a language in the context the views render German (the fallback).
 func TestUpgradeCard(t *testing.T) {
-	render := func(info kiosk.UpgradeInfo, msg string) string {
+	render := func(info core.UpgradeInfo, msg string) string {
 		var b bytes.Buffer
 		if err := UpgradeCard(info, msg).Render(context.Background(), &b); err != nil {
 			t.Fatal(err)
@@ -20,22 +20,22 @@ func TestUpgradeCard(t *testing.T) {
 	}
 	for _, c := range []struct {
 		name      string
-		info      kiosk.UpgradeInfo
+		info      core.UpgradeInfo
 		msg       string
 		want, not []string
 	}{
-		{"newer release", kiosk.UpgradeInfo{Current: "v0.1.0", Release: true, Latest: "v0.2.0", URL: "https://github.com/o/r/releases/tag/v0.2.0", Newer: true, CanInstall: true},
+		{"newer release", core.UpgradeInfo{Current: "v0.1.0", Release: true, Latest: "v0.2.0", URL: "https://github.com/o/r/releases/tag/v0.2.0", Newer: true, CanInstall: true},
 			"", []string{"v0.2.0 ist verfügbar", `class="disturbs"`, `hx-post="/system/upgrade"`, "v0.2.0 installieren", "hx-confirm="}, []string{"Aktuell", "Entwicklungsversion"}},
-		{"up to date", kiosk.UpgradeInfo{Current: "v0.2.0", Release: true, Latest: "v0.2.0"},
+		{"up to date", core.UpgradeInfo{Current: "v0.2.0", Release: true, Latest: "v0.2.0"},
 			"", []string{"Aktuell", "Erneut prüfen"}, []string{"installieren", `hx-post="/system/upgrade"`}},
-		{"commit build gets the release offered", kiosk.UpgradeInfo{Current: "b7edd6f", Latest: "v0.1.0", Newer: true, CanInstall: true},
+		{"commit build gets the release offered", core.UpgradeInfo{Current: "b7edd6f", Latest: "v0.1.0", Newer: true, CanInstall: true},
 			"", []string{"Entwicklungsversion", "v0.1.0 installieren"}, nil},
-		{"newer, but nothing for this device", kiosk.UpgradeInfo{Current: "v0.1.0", Release: true, Latest: "v0.2.0", Newer: true},
+		{"newer, but nothing for this device", core.UpgradeInfo{Current: "v0.1.0", Release: true, Latest: "v0.2.0", Newer: true},
 			"", []string{"v0.2.0 ist verfügbar"}, []string{"installieren"}},
-		{"check failed", kiosk.UpgradeInfo{Current: "v0.1.0"},
+		{"check failed", core.UpgradeInfo{Current: "v0.1.0"},
 			"Es wurde noch keine Version veröffentlicht", []string{"noch keine Version", "Erneut prüfen"}, []string{"installieren", "Aktuell"}},
 		// The link comes from GitHub's answer: scripts must not get through.
-		{"hostile link", kiosk.UpgradeInfo{Current: "v0.1.0", Release: true, Latest: "v0.2.0", URL: "javascript:alert(1)", Newer: true},
+		{"hostile link", core.UpgradeInfo{Current: "v0.1.0", Release: true, Latest: "v0.2.0", URL: "javascript:alert(1)", Newer: true},
 			"", nil, []string{"javascript:alert"}},
 	} {
 		t.Run(c.name, func(t *testing.T) {

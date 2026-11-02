@@ -32,14 +32,14 @@ func TestNameHue(t *testing.T) {
 		"",
 	); !strings.Contains(
 		html,
-		`style="color: var(--kiosk-hue-`+nameHue("Foyer", "")+`);"`,
+		`style="color: var(--fk-hue-`+nameHue("Foyer", "")+`);"`,
 	) {
 		t.Errorf("automatic color missing:\n%s", html)
 	}
 	// The popover: the name field (empty while the hostname is shown),
 	// "auto" plus nine dots, the chosen one pressed.
 	html := render("p4", "", "indigo")
-	if !strings.Contains(html, `style="color: var(--kiosk-hue-indigo);"`) ||
+	if !strings.Contains(html, `style="color: var(--fk-hue-indigo);"`) ||
 		!strings.Contains(html, `<wa-popover for="brand-name"`) ||
 		!strings.Contains(html, `name="name" value=""`) {
 		t.Errorf("color, popover or empty name field missing:\n%s", html)
@@ -49,7 +49,7 @@ func TestNameHue(t *testing.T) {
 	}
 	if !strings.Contains(
 		html,
-		`value="indigo" class="hue" style="background: var(--kiosk-hue-indigo);"`,
+		`value="indigo" class="hue" style="background: var(--fk-hue-indigo);"`,
 	) ||
 		strings.Count(html, `aria-pressed="true"`) != 1 {
 		t.Errorf("chosen dot not marked:\n%s", html)

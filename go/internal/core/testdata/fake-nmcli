@@ -1,5 +1,5 @@
 #!/bin/bash
-# Fake nmcli for the tests and dev.sh: implements just the calls kiosk/wifi.go
+# Fake nmcli for the tests and dev.sh: implements just the calls core/wifi.go
 # makes. Saved connections are files in $FAKE_NMCLI_DIR/con (first line =
 # SSID), $FAKE_NMCLI_DIR/active names the connected one, $FAKE_NMCLI_DIR/scan
 # holds "SSID:SIGNAL:SECURITY" lines (nmcli -t escaping), a file

@@ -1,9 +1,9 @@
-package kiosk
+package core
 
 import "runtime/debug"
 
 // releaseVersion is set when a release is built (-ldflags "-X
-// github.com/rnkch/flimmerkiste/internal/kiosk.releaseVersion=v1.2.3").
+// github.com/rnkch/flimmerkiste/internal/core.releaseVersion=v1.2.3").
 var releaseVersion string
 
 // Version is the release the binary was built as ("v1.2.3"), else the git

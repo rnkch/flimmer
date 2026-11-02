@@ -1,6 +1,6 @@
 package views
 
-import "github.com/rnkch/flimmerkiste/internal/kiosk"
+import "github.com/rnkch/flimmerkiste/internal/core"
 
 // WifiCard: saved networks and networks in range (loaded after the page,
 // a scan takes a moment), plus a form to add one. Picking a network in range
@@ -30,7 +30,7 @@ templ WifiCard() {
 	</wa-card>
 }
 
-templ WifiList(list []kiosk.WifiNetwork, err string) {
+templ WifiList(list []core.WifiNetwork, err string) {
 	<div id="wifi" class="rows wifi" hx-get="/settings/wifi" hx-trigger="network from:body" hx-swap="outerMorph">
 		if err != "" {
 			<wa-callout variant="warning" size="s"><wa-icon slot="icon" name="triangle-exclamation"></wa-icon>{ err }</wa-callout>

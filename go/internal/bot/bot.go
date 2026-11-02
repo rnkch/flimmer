@@ -1,5 +1,5 @@
 // Package bot is the Telegram front end. Every action goes through
-// kiosk.Service so the bot and the web UI behave the same.
+// core.Service so the bot and the web UI behave the same.
 package bot
 
 import (
@@ -20,13 +20,13 @@ import (
 	"github.com/go-telegram/bot/models"
 
 	"github.com/rnkch/flimmerkiste/internal/access"
-	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/core"
 )
 
 const pageSize = 5
 
 type Bot struct {
-	k       *kiosk.Service
+	k       *core.Service
 	b       *tg.Bot
 	groupID int64
 
@@ -39,7 +39,7 @@ type pendingInput struct {
 	mediaID int64
 }
 
-func New(token string, groupID int64, k *kiosk.Service) (*Bot, error) {
+func New(token string, groupID int64, k *core.Service) (*Bot, error) {
 	bt := &Bot{k: k, groupID: groupID, pending: map[int64]pendingInput{}}
 	b, err := tg.New(token,
 		tg.WithDefaultHandler(bt.handle),
@@ -77,7 +77,7 @@ func (bt *Bot) Run(ctx context.Context) {
 		{Command: "debug", Description: "Debug-Modus"},
 		{Command: "help", Description: "Hilfe"},
 	}})
-	bt.send(ctx, "📺 Flimmerkiste ist wieder online! (Version "+kiosk.Version()+")", nil)
+	bt.send(ctx, "📺 Flimmerkiste ist wieder online! (Version "+core.Version()+")", nil)
 	go bt.watchJobs(ctx)
 	bt.b.Start(ctx)
 }
@@ -107,7 +107,7 @@ var downloadURL = regexp.MustCompile(`(?i)^https?://\S+$`)
 
 func (bt *Bot) onMessage(ctx context.Context, m *models.Message) {
 	if len(m.NewChatMembers) > 0 {
-		bt.reply(ctx, m, bt.k.Setting(ctx, kiosk.SettingHelpText))
+		bt.reply(ctx, m, bt.k.Setting(ctx, core.SettingHelpText))
 		return
 	}
 	if bt.onMedia(ctx, m) {
@@ -125,7 +125,7 @@ func (bt *Bot) onMessage(ctx context.Context, m *models.Message) {
 		return
 	}
 	if u := streamURL.FindString(text); u != "" {
-		if err := bt.k.Stream(ctx, u); errors.Is(err, kiosk.ErrLocked) {
+		if err := bt.k.Stream(ctx, u); errors.Is(err, core.ErrLocked) {
 			bt.reply(ctx, m, warn(err))
 			return
 		} else if err != nil {
@@ -145,7 +145,7 @@ func (bt *Bot) onMessage(ctx context.Context, m *models.Message) {
 			bt.reply(ctx, m, "⚠️ Syntax: updatehilfe <Text>")
 			return
 		}
-		bt.k.SetSetting(ctx, kiosk.SettingHelpText, rest)
+		bt.k.SetSetting(ctx, core.SettingHelpText, rest)
 		bt.reply(ctx, m, "📝 Hilfetext gespeichert!")
 		return
 	}
@@ -169,10 +169,10 @@ func (bt *Bot) onMessage(ctx context.Context, m *models.Message) {
 	case "Status":
 		bt.reply(ctx, m, bt.statusText(ctx))
 	case "Help":
-		bt.reply(ctx, m, bt.k.Setting(ctx, kiosk.SettingHelpText))
+		bt.reply(ctx, m, bt.k.Setting(ctx, core.SettingHelpText))
 	default:
 		if l := strings.ToLower(text); l == "help" || l == "hilfe" {
-			bt.reply(ctx, m, bt.k.Setting(ctx, kiosk.SettingHelpText))
+			bt.reply(ctx, m, bt.k.Setting(ctx, core.SettingHelpText))
 		}
 	}
 }
@@ -198,7 +198,7 @@ func (bt *Bot) onCommand(ctx context.Context, m *models.Message, text string) {
 	case "pause", "pa":
 		bt.control(ctx, m, bt.k.TogglePause, "⏯️ Wiedergabe pausiert/fortgesetzt")
 	case "help", "h":
-		bt.reply(ctx, m, bt.k.Setting(ctx, kiosk.SettingHelpText))
+		bt.reply(ctx, m, bt.k.Setting(ctx, core.SettingHelpText))
 	case "display", "di":
 		bt.control(ctx, m, bt.k.ToggleStats, "📺 mpv-Statistik (i) auf dem Bildschirm umgeschaltet")
 	case "status", "st":
@@ -224,14 +224,14 @@ func (bt *Bot) onCommand(ctx context.Context, m *models.Message, text string) {
 		default:
 			on = !on
 		}
-		bt.k.SetSetting(ctx, kiosk.SettingDebug, fmt.Sprint(on))
+		bt.k.SetSetting(ctx, core.SettingDebug, fmt.Sprint(on))
 		bt.reply(ctx, m, map[bool]string{true: "🔍 Debug: ON", false: "🔍 Debug: OFF"}[on])
 	}
 }
 
 // warn is the reply to an action that failed.
 func warn(err error) string {
-	if errors.Is(err, kiosk.ErrLocked) {
+	if errors.Is(err, core.ErrLocked) {
 		return "🔒 Gesperrt: das würde die Wiedergabe unterbrechen. Entsperren mit /lock"
 	}
 	return "⚠️ " + err.Error()
@@ -242,11 +242,11 @@ func warn(err error) string {
 func (bt *Bot) upgrade(ctx context.Context, m *models.Message, arg string) {
 	info, err := bt.k.CheckUpgrade(ctx, true)
 	switch {
-	case errors.Is(err, kiosk.ErrUpgradeOff):
+	case errors.Is(err, core.ErrUpgradeOff):
 		bt.reply(ctx, m, "⚠️ Aktualisierungen sind abgeschaltet.")
 		return
-	case errors.Is(err, kiosk.ErrNoRelease):
-		bt.reply(ctx, m, "ℹ️ Es wurde noch keine Version veröffentlicht. Läuft: "+kiosk.Version())
+	case errors.Is(err, core.ErrNoRelease):
+		bt.reply(ctx, m, "ℹ️ Es wurde noch keine Version veröffentlicht. Läuft: "+core.Version())
 		return
 	case err != nil:
 		bt.reply(ctx, m, "⚠️ Prüfen fehlgeschlagen: "+err.Error())
@@ -302,15 +302,15 @@ func (bt *Bot) upgrade(ctx context.Context, m *models.Message, arg string) {
 // upgradeErrText explains the errors an upgrade can end with.
 func upgradeErrText(err error) string {
 	switch {
-	case errors.Is(err, kiosk.ErrLocked):
+	case errors.Is(err, core.ErrLocked):
 		return "gesperrt: das würde die Wiedergabe unterbrechen. Entsperren mit /lock"
-	case errors.Is(err, kiosk.ErrChecksum):
+	case errors.Is(err, core.ErrChecksum):
 		return "der Download passt nicht zur Prüfsumme; nichts wurde geändert."
-	case errors.Is(err, kiosk.ErrUpgradeCheck):
+	case errors.Is(err, core.ErrUpgradeCheck):
 		return "das heruntergeladene Programm funktioniert nicht; nichts wurde geändert."
-	case errors.Is(err, kiosk.ErrUpgradeBusy):
+	case errors.Is(err, core.ErrUpgradeBusy):
 		return "eine Aktualisierung läuft bereits."
-	case errors.Is(err, kiosk.ErrUpToDate):
+	case errors.Is(err, core.ErrUpToDate):
 		return "schon aktuell."
 	}
 	return err.Error()
@@ -361,7 +361,7 @@ func (bt *Bot) qr(ctx context.Context, m *models.Message) {
 		bt.reply(ctx, m, "⚠️ Keine Adresse im lokalen Netz gefunden.")
 		return
 	}
-	shown, err := bt.k.ToggleQR(ctx, kiosk.QRShowFor)
+	shown, err := bt.k.ToggleQR(ctx, core.QRShowFor)
 	if err != nil {
 		bt.reply(ctx, m, warn(err))
 		return
@@ -373,7 +373,7 @@ func (bt *Bot) qr(ctx context.Context, m *models.Message) {
 	caption := fmt.Sprintf(
 		"📺 Weboberfläche: %s\n\nAuf dem Bildschirm für %d s. Das Zertifikat ist selbst erstellt; der Browser warnt beim ersten Mal.",
 		url,
-		int(kiosk.QRShowFor.Seconds()),
+		int(core.QRShowFor.Seconds()),
 	)
 	png, err := access.PNG(url, 8)
 	if err != nil {
@@ -544,7 +544,7 @@ func (bt *Bot) watchJobs(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case e := <-events:
-			if e.Type != kiosk.EventJob {
+			if e.Type != core.EventJob {
 				continue
 			}
 			j, err := bt.k.Job(ctx, e.JobID)
@@ -593,7 +593,7 @@ func (bt *Bot) onDownloadURL(ctx context.Context, m *models.Message, url string)
 	}
 	info, err := bt.k.ProbeURL(ctx, url)
 	switch {
-	case errors.Is(err, kiosk.ErrPlaylist):
+	case errors.Is(err, core.ErrPlaylist):
 		edit("⚠️ Playlists werden nicht unterstützt, bitte ein einzelnes Video schicken.")
 		return
 	case err != nil:
@@ -611,7 +611,7 @@ func (bt *Bot) onDownloadURL(ctx context.Context, m *models.Message, url string)
 			size = f.Size
 		}
 	}
-	j, err := bt.k.EnqueueURL(ctx, info.URL, info.Auto, info.Title, kiosk.Caption{}, size)
+	j, err := bt.k.EnqueueURL(ctx, info.URL, info.Auto, info.Title, core.Caption{}, size)
 	if err != nil {
 		edit(warn(err))
 		return

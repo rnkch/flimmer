@@ -23,7 +23,7 @@ import (
 	"github.com/a-h/templ"
 
 	"github.com/rnkch/flimmerkiste/internal/access"
-	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/core"
 	"github.com/rnkch/flimmerkiste/internal/store/db"
 	"github.com/rnkch/flimmerkiste/internal/sysinfo"
 	"github.com/rnkch/flimmerkiste/internal/web/i18n"
@@ -42,7 +42,7 @@ func (s *Server) page(r *http.Request, title, active string) views.Page {
 		Name: s.k.DisplayName(
 			r.Context(),
 		),
-		NameSet: s.k.Setting(r.Context(), kiosk.SettingDisplayName),
+		NameSet: s.k.Setting(r.Context(), core.SettingDisplayName),
 		Hue:     s.k.DisplayHue(r.Context()),
 		Locked:  s.k.Locked(r.Context()),
 		Favicon: s.faviconHref(r.Context()),
@@ -137,66 +137,66 @@ func errText(ctx context.Context, err error) string {
 	switch {
 	case errors.As(err, &ue):
 		return string(ue)
-	case errors.Is(err, kiosk.ErrPasswordTooShort):
+	case errors.Is(err, core.ErrPasswordTooShort):
 		return i18n.T(ctx, "The password needs at least 8 characters")
-	case errors.Is(err, kiosk.ErrEmptyTitle):
+	case errors.Is(err, core.ErrEmptyTitle):
 		return i18n.T(ctx, "The title must not be empty")
-	case errors.Is(err, kiosk.ErrBadDuration):
+	case errors.Is(err, core.ErrBadDuration):
 		return i18n.T(ctx, "The display time must be a positive number")
-	case errors.Is(err, kiosk.ErrCannotMove):
+	case errors.Is(err, core.ErrCannotMove):
 		return i18n.T(ctx, "Can't move any further")
-	case errors.Is(err, kiosk.ErrNotFound), errors.Is(err, sql.ErrNoRows):
+	case errors.Is(err, core.ErrNotFound), errors.Is(err, sql.ErrNoRows):
 		return i18n.T(ctx, "Not found")
-	case errors.Is(err, kiosk.ErrPlaylist):
+	case errors.Is(err, core.ErrPlaylist):
 		return i18n.T(ctx, "Playlists aren't supported, use a single video")
-	case errors.Is(err, kiosk.ErrLive):
+	case errors.Is(err, core.ErrLive):
 		return i18n.T(ctx, "Live streams can't be downloaded; play them directly")
-	case errors.Is(err, kiosk.ErrNoVideo):
+	case errors.Is(err, core.ErrNoVideo):
 		return i18n.T(ctx, "No video found at this URL")
-	case errors.Is(err, kiosk.ErrBadHue):
+	case errors.Is(err, core.ErrBadHue):
 		return i18n.T(ctx, "Unknown color")
-	case errors.Is(err, kiosk.ErrNameTooLong):
-		return i18n.T(ctx, "The name can have at most %d characters", kiosk.DisplayNameMax)
-	case errors.Is(err, kiosk.ErrLocked):
+	case errors.Is(err, core.ErrNameTooLong):
+		return i18n.T(ctx, "The name can have at most %d characters", core.DisplayNameMax)
+	case errors.Is(err, core.ErrLocked):
 		return i18n.T(ctx, "Locked: this would interrupt playback. Unlock it at the top.")
-	case errors.Is(err, kiosk.ErrDisabled):
+	case errors.Is(err, core.ErrDisabled):
 		return i18n.T(ctx, "This entry is disabled; enable it first")
-	case errors.Is(err, kiosk.ErrUpgradeOff):
+	case errors.Is(err, core.ErrUpgradeOff):
 		return i18n.T(ctx, "Updates are switched off")
-	case errors.Is(err, kiosk.ErrNoRelease):
+	case errors.Is(err, core.ErrNoRelease):
 		return i18n.T(ctx, "No release has been published yet")
-	case errors.Is(err, kiosk.ErrUpToDate):
+	case errors.Is(err, core.ErrUpToDate):
 		return i18n.T(ctx, "Already up to date")
-	case errors.Is(err, kiosk.ErrUpgradeBusy):
+	case errors.Is(err, core.ErrUpgradeBusy):
 		return i18n.T(ctx, "An update is already running")
-	case errors.Is(err, kiosk.ErrNoAsset):
+	case errors.Is(err, core.ErrNoAsset):
 		return i18n.T(ctx, "The release has no download for this device")
-	case errors.Is(err, kiosk.ErrChecksum):
+	case errors.Is(err, core.ErrChecksum):
 		return i18n.T(ctx, "The download doesn't match its checksum; nothing was changed")
-	case errors.Is(err, kiosk.ErrUpgradeCheck):
+	case errors.Is(err, core.ErrUpgradeCheck):
 		return i18n.T(ctx, "The downloaded program doesn't work; nothing was changed")
-	case errors.Is(err, kiosk.ErrNotSeekable):
+	case errors.Is(err, core.ErrNotSeekable):
 		return i18n.T(ctx, "This can't jump to a position")
-	case errors.Is(err, kiosk.ErrJobFinished):
+	case errors.Is(err, core.ErrJobFinished):
 		return i18n.T(ctx, "Already finished")
-	case errors.Is(err, kiosk.ErrWifiUnavailable):
+	case errors.Is(err, core.ErrWifiUnavailable):
 		return i18n.T(ctx, "Wi-Fi can't be managed on this device")
-	case errors.Is(err, kiosk.ErrWifiSSID):
+	case errors.Is(err, core.ErrWifiSSID):
 		return i18n.T(ctx, "The network name must be 1 to 32 characters")
-	case errors.Is(err, kiosk.ErrWifiPassword):
+	case errors.Is(err, core.ErrWifiPassword):
 		return i18n.T(
 			ctx,
 			"The Wi-Fi password must be 8 to 63 characters (or empty for an open network)",
 		)
-	case errors.Is(err, kiosk.ErrWifiEnterprise):
+	case errors.Is(err, core.ErrWifiEnterprise):
 		return i18n.T(ctx, "Networks with user name and password (802.1X) are not supported")
-	case errors.Is(err, kiosk.ErrWifiFallback):
+	case errors.Is(err, core.ErrWifiFallback):
 		return i18n.T(ctx, "The fallback network can't be changed here")
-	case errors.Is(err, kiosk.ErrWifiFallbackSSID):
+	case errors.Is(err, core.ErrWifiFallbackSSID):
 		return i18n.T(ctx, "This is the fallback network, it is already saved")
-	case errors.Is(err, kiosk.ErrWifiActive):
+	case errors.Is(err, core.ErrWifiActive):
 		return i18n.T(ctx, "The Pi is connected through this network right now")
-	case errors.Is(err, kiosk.ErrWifiNotSaved):
+	case errors.Is(err, core.ErrWifiNotSaved):
 		return i18n.T(ctx, "This network is not saved")
 	}
 	return err.Error()
@@ -350,7 +350,7 @@ func (s *Server) mediaDuration(w http.ResponseWriter, r *http.Request) {
 		err = s.k.SetImageDuration(r.Context(), pathID(r), n)
 	}
 	if err != nil {
-		fail(w, r, kiosk.ErrBadDuration)
+		fail(w, r, core.ErrBadDuration)
 		return
 	}
 	s.mediaRow(w, r, pathID(r), "")
@@ -413,7 +413,7 @@ func (s *Server) addPage(w http.ResponseWriter, r *http.Request) {
 			s.page(r, "Add", "add"),
 			jobs,
 			free,
-			s.k.SettingInt(r.Context(), kiosk.SettingImageDurationDflt),
+			s.k.SettingInt(r.Context(), core.SettingImageDurationDflt),
 		),
 	)
 }
@@ -503,7 +503,7 @@ func (s *Server) upload(w http.ResponseWriter, r *http.Request) {
 	secs, _ := strconv.Atoi(fields["seconds"])
 	title := strings.TrimSpace(fields["title"])
 	for i, f := range got {
-		c := kiosk.Caption{Seconds: secs, NoTranscode: fields["no_transcode"] != ""}
+		c := core.Caption{Seconds: secs, NoTranscode: fields["no_transcode"] != ""}
 		if pos > 0 {
 			c.Position = pos + i
 		}
@@ -554,7 +554,7 @@ const webQRShowFor = 10 * time.Second
 func (s *Server) brandView(ctx context.Context) templ.Component {
 	return views.BrandName(
 		s.k.DisplayName(ctx),
-		s.k.Setting(ctx, kiosk.SettingDisplayName),
+		s.k.Setting(ctx, core.SettingDisplayName),
 		s.k.DisplayHue(ctx),
 	)
 }
@@ -807,9 +807,9 @@ func (s *Server) upgradeShow(w http.ResponseWriter, r *http.Request) {
 	info, err := s.k.CheckUpgrade(r.Context(), r.FormValue("check") != "")
 	msg := ""
 	if err != nil {
-		info = kiosk.UpgradeInfo{Current: kiosk.Version()}
+		info = core.UpgradeInfo{Current: core.Version()}
 		msg = errText(r.Context(), err)
-		if !errors.Is(err, kiosk.ErrUpgradeOff) && !errors.Is(err, kiosk.ErrNoRelease) {
+		if !errors.Is(err, core.ErrUpgradeOff) && !errors.Is(err, core.ErrNoRelease) {
 			msg = i18n.T(r.Context(), "Couldn't check for updates: %s", msg)
 		}
 	}
@@ -874,10 +874,10 @@ func (s *Server) mediaBytes(ctx context.Context) int64 {
 
 func (s *Server) settings(ctx context.Context) views.Settings {
 	return views.Settings{
-		HelpText:      s.k.Setting(ctx, kiosk.SettingHelpText),
+		HelpText:      s.k.Setting(ctx, core.SettingHelpText),
 		Debug:         s.k.Debug(ctx),
-		BitrateK:      s.k.SettingInt(ctx, kiosk.SettingVideoBitrateK),
-		ImageDuration: s.k.SettingInt(ctx, kiosk.SettingImageDurationDflt),
+		BitrateK:      s.k.SettingInt(ctx, core.SettingVideoBitrateK),
+		ImageDuration: s.k.SettingInt(ctx, core.SettingImageDurationDflt),
 		HDMI:          s.k.Config().HDMI,
 	}
 }
@@ -908,15 +908,15 @@ func (s *Server) settingsSave(w http.ResponseWriter, r *http.Request) {
 		}
 		if !set(
 			map[string]string{
-				kiosk.SettingVideoBitrateK:     strconv.Itoa(bitrate),
-				kiosk.SettingImageDurationDflt: strconv.Itoa(dur),
+				core.SettingVideoBitrateK:     strconv.Itoa(bitrate),
+				core.SettingImageDurationDflt: strconv.Itoa(dur),
 			},
 		) {
 			return
 		}
 	case "display":
 		if !set(
-			map[string]string{kiosk.SettingDebug: strconv.FormatBool(r.FormValue("debug") != "")},
+			map[string]string{core.SettingDebug: strconv.FormatBool(r.FormValue("debug") != "")},
 		) {
 			return
 		}
@@ -925,16 +925,16 @@ func (s *Server) settingsSave(w http.ResponseWriter, r *http.Request) {
 		help := strings.TrimSpace(r.FormValue("help_text"))
 		var err error
 		if help == "" {
-			err = s.k.ResetSetting(ctx, kiosk.SettingHelpText)
+			err = s.k.ResetSetting(ctx, core.SettingHelpText)
 		} else {
-			err = s.k.SetSetting(ctx, kiosk.SettingHelpText, help)
+			err = s.k.SetSetting(ctx, core.SettingHelpText, help)
 		}
 		if err != nil {
 			fail(w, r, err)
 			return
 		}
 		toast(w, "success", i18n.T(ctx, "Settings saved"))
-		render(w, r, views.HelpForm(s.k.Setting(ctx, kiosk.SettingHelpText)))
+		render(w, r, views.HelpForm(s.k.Setting(ctx, core.SettingHelpText)))
 		return
 	default:
 		http.Error(w, "unknown section", http.StatusBadRequest)
@@ -1078,7 +1078,7 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Coalesce bursts (e.g. job progress) into at most one event per type per tick.
-	pending := map[kiosk.EventType]bool{}
+	pending := map[core.EventType]bool{}
 	clock := time.NewTicker(time.Second)
 	defer clock.Stop()
 	keepAlive := time.NewTicker(20 * time.Second)
@@ -1104,14 +1104,14 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 			var card, list, summary, brand bool
 			for t := range pending {
 				switch t {
-				case kiosk.EventPlayer:
+				case core.EventPlayer:
 					ok = ok && nowPlaying()
 					card, list = true, true // the current entry moved
-				case kiosk.EventPlaylist:
+				case core.EventPlaylist:
 					list, summary = true, true
-				case kiosk.EventJob:
+				case core.EventJob:
 					summary = true // the number of jobs in progress
-				case kiosk.EventSettings:
+				case core.EventSettings:
 					brand = true // the name or its colour (every setting counts; it is cheap)
 				}
 				ok = ok && send(string(t), "1")
@@ -1133,8 +1133,8 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) urlCheck(w http.ResponseWriter, r *http.Request) {
 	u := strings.TrimSpace(r.FormValue("url"))
-	if kiosk.IsDirectStream(u) {
-		render(w, r, views.URLPreview(kiosk.DirectStreamInfo(u)))
+	if core.IsDirectStream(u) {
+		render(w, r, views.URLPreview(core.DirectStreamInfo(u)))
 		return
 	}
 	if !strings.HasPrefix(u, "http://") && !strings.HasPrefix(u, "https://") {
@@ -1146,9 +1146,9 @@ func (s *Server) urlCheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	info, err := s.k.ProbeURL(r.Context(), u)
-	var pe *kiosk.ProbeError
+	var pe *core.ProbeError
 	if errors.As(err, &pe) { // yt-dlp can't list formats, mpv might still play it
-		render(w, r, views.URLPreview(kiosk.UnprobedInfo(u, pe)))
+		render(w, r, views.URLPreview(core.UnprobedInfo(u, pe)))
 		return
 	}
 	if err != nil {
@@ -1159,9 +1159,9 @@ func (s *Server) urlCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 // parseFormat reads the "spec size height" value of the format select.
-func parseFormat(v string) kiosk.URLFormat {
+func parseFormat(v string) core.URLFormat {
 	f := strings.Fields(v)
-	var uf kiosk.URLFormat
+	var uf core.URLFormat
 	if len(f) > 0 {
 		uf.Spec = f[0]
 	}
@@ -1192,7 +1192,7 @@ func (s *Server) urlAdd(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.FormValue("mode") == "stream" {
 		dur, _ := strconv.ParseFloat(r.FormValue("duration"), 64)
-		info := kiosk.URLInfo{
+		info := core.URLInfo{
 			URL:       u,
 			Title:     title,
 			Thumbnail: r.FormValue("thumbnail"),
@@ -1215,7 +1215,7 @@ func (s *Server) urlAdd(w http.ResponseWriter, r *http.Request) {
 		u,
 		f.Spec,
 		title,
-		kiosk.Caption{Position: pos, Seconds: secs, NoTranscode: r.FormValue("no_transcode") != ""},
+		core.Caption{Position: pos, Seconds: secs, NoTranscode: r.FormValue("no_transcode") != ""},
 		f.Size,
 	); err != nil {
 		fail(w, r, err)

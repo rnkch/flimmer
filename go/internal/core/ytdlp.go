@@ -1,4 +1,4 @@
-package kiosk
+package core
 
 import (
 	"bufio"
@@ -385,10 +385,10 @@ func (s *Service) EnqueueURL(
 }
 
 // download fetches a URL job with yt-dlp into TmpDir and returns the file.
-const progressMarker = "KIOSKPROGRESS"
+const progressMarker = "FLIMMERPROGRESS"
 
 // parseProgress reads a yt-dlp progress line printed by our template,
-// "KIOSKPROGRESS <format id> <percent>". The percent is padded ("  4.2%") and
+// "FLIMMERPROGRESS <format id> <percent>". The percent is padded ("  4.2%") and
 // "N/A" when the server sends no size; then ok is false.
 func parseProgress(line string) (id string, pct float64, ok bool) {
 	f := strings.Fields(line)
@@ -419,7 +419,7 @@ func (s *Service) download(ctx context.Context, j db.Job) (string, error) {
 		"-o",
 		filepath.Join(s.cfg.TmpDir, fmt.Sprintf("url-%d.%%(ext)s", j.ID)),
 		// "download:" selects the template for download progress; it is not
-		// printed. The marker is what we look for: "KIOSKPROGRESS mp4   4.2%".
+		// printed. The marker is what we look for: "FLIMMERPROGRESS mp4   4.2%".
 		"--progress-template",
 		"download:"+progressMarker+" %(info.format_id)s %(progress._percent_str)s",
 		"--print",

@@ -56,7 +56,7 @@ func TestCertsCoverHostAndAreReused(t *testing.T) {
 }
 
 func TestURLAndPNG(t *testing.T) {
-	if got := URL(":8443", "https://kiosk.example/"); got != "https://kiosk.example" {
+	if got := URL(":8443", "https://display.example/"); got != "https://display.example" {
 		t.Fatalf("override: %q", got)
 	}
 	if lan := LANAddress(); lan != "" {

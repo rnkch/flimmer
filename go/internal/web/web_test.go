@@ -15,12 +15,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/core"
 	"github.com/rnkch/flimmerkiste/internal/mpv"
 	"github.com/rnkch/flimmerkiste/internal/store"
 )
 
-func newServer(t *testing.T) (*Server, *kiosk.Service) {
+func newServer(t *testing.T) (*Server, *core.Service) {
 	t.Helper()
 	dir := t.TempDir()
 	st, err := store.Open(context.Background(), filepath.Join(dir, "k.db"))
@@ -28,7 +28,7 @@ func newServer(t *testing.T) (*Server, *kiosk.Service) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { st.Close() })
-	k := kiosk.New(kiosk.Config{MediaDir: dir, TmpDir: dir, ThumbDir: dir}, st, &mpv.Player{})
+	k := core.New(core.Config{MediaDir: dir, TmpDir: dir, ThumbDir: dir}, st, &mpv.Player{})
 	if err := k.SetWebPassword(context.Background(), "test-password-123"); err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +130,7 @@ func TestEnglishPagesHaveNoGerman(t *testing.T) {
 		t.Fatal(err)
 	}
 	// The default help text is German content for the Telegram group, not UI text.
-	k.SetSetting(context.Background(), kiosk.SettingHelpText, "Help")
+	k.SetSetting(context.Background(), core.SettingHelpText, "Help")
 	german := regexp.MustCompile(`[äöüÄÖÜß]|Einstellungen|Hochladen|Wiedergabe|Speichern|Abmelden`)
 	for _, p := range []string{"/playlist", "/add", "/system", "/settings", "/settings/wifi", "/login"} {
 		req := httptest.NewRequest("GET", p, nil)
@@ -177,8 +177,8 @@ func TestDisableEntryOverHTTP(t *testing.T) {
 	s, k := newServer(t)
 	ctx := context.Background()
 	m, err := k.AddStream(
-		ctx, kiosk.URLInfo{URL: "rtsp://example.invalid/cam", Title: "Cam", Live: true},
-		kiosk.URLFormat{}, "", 0,
+		ctx, core.URLInfo{URL: "rtsp://example.invalid/cam", Title: "Cam", Live: true},
+		core.URLFormat{}, "", 0,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -211,7 +211,7 @@ func TestDisableEntryOverHTTP(t *testing.T) {
 	if strings.Contains(off, "Show now") || strings.Contains(off, "Disable</wa-dropdown-item>") {
 		t.Errorf("a disabled row offers Show now or Disable:\n%s", off)
 	}
-	if got, _ := k.Get(ctx, m.ID); kiosk.Enabled(got) {
+	if got, _ := k.Get(ctx, m.ID); core.Enabled(got) {
 		t.Fatal("still enabled in the database")
 	}
 	if sum := do("GET", "/playlist/summary", nil); !strings.Contains(sum, "1 disabled") {
@@ -231,7 +231,7 @@ func TestDisableEntryOverHTTP(t *testing.T) {
 // A live connection (/events) opens with the boot id, so a page that
 // reconnects after a restart can tell (app.js, "boot").
 func TestEventsOpenWithBootID(t *testing.T) {
-	first := func(s *Server, k *kiosk.Service) (event, data string) {
+	first := func(s *Server, k *core.Service) (event, data string) {
 		t.Helper()
 		token, err := k.Login(context.Background(), "test-password-123")
 		if err != nil {
@@ -390,7 +390,7 @@ func TestIconCachingAndAssetVersion(t *testing.T) {
 type sseMessage struct{ event, data string }
 
 // openEvents connects to /events like a page does and returns its messages.
-func openEvents(t *testing.T, s *Server, k *kiosk.Service) <-chan sseMessage {
+func openEvents(t *testing.T, s *Server, k *core.Service) <-chan sseMessage {
 	t.Helper()
 	token, err := k.Login(context.Background(), "test-password-123")
 	if err != nil {
@@ -468,16 +468,16 @@ func TestLiveConnectionPushesWhatChanged(t *testing.T) {
 		}
 	}
 	for _, c := range []struct {
-		event     kiosk.EventType
+		event     core.EventType
 		want, not []string
 	}{
-		{kiosk.EventPlayer, []string{card, list}, []string{summary, brand}}, // the current entry moved
-		{kiosk.EventPlaylist, []string{list, summary}, []string{card, brand}},
-		{kiosk.EventJob, []string{summary}, []string{card, list, brand}}, // jobs in progress
+		{core.EventPlayer, []string{card, list}, []string{summary, brand}}, // the current entry moved
+		{core.EventPlaylist, []string{list, summary}, []string{card, brand}},
+		{core.EventJob, []string{summary}, []string{card, list, brand}}, // jobs in progress
 		// the name or its colour: the header and the tab icon, in every open page
-		{kiosk.EventSettings, []string{brand, favicon}, []string{card, list, summary}},
+		{core.EventSettings, []string{brand, favicon}, []string{card, list, summary}},
 	} {
-		k.Hub.Publish(kiosk.Event{Type: c.event})
+		k.Hub.Publish(core.Event{Type: c.event})
 		got, events := partials(msgs, 2*time.Second)
 		for _, w := range c.want {
 			if !got[w] {
@@ -633,7 +633,7 @@ func TestManifestAndHomeScreenIcons(t *testing.T) {
 func TestFaviconAndHeaderIconFollowTheNameColor(t *testing.T) {
 	s, k := newServer(t)
 	ctx := context.Background()
-	for _, hue := range kiosk.NameHues { // every hue the name can have has a colour to use
+	for _, hue := range core.NameHues { // every hue the name can have has a colour to use
 		if c := s.hues[hue]; len(c) != 7 || c[0] != '#' {
 			t.Errorf("no colour for hue %q: %q", hue, c)
 		}
@@ -664,7 +664,7 @@ func TestFaviconAndHeaderIconFollowTheNameColor(t *testing.T) {
 	// Without a chosen colour it is the one the name hashes to, as in the header.
 	k.SetDisplayHue(ctx, "")
 	k.SetDisplayName(ctx, "Foyer")
-	if want := s.hues[kiosk.HashHue("Foyer")]; !strings.Contains(
+	if want := s.hues[core.HashHue("Foyer")]; !strings.Contains(
 		get("/favicon.svg", nil).Body.String(),
 		want,
 	) {
@@ -723,7 +723,7 @@ func TestColourChangeIsPushedToOpenPages(t *testing.T) {
 	}
 	var brand, favicon string
 	deadline := time.After(3 * time.Second)
-	for brand == "" || favicon == "" || !strings.Contains(brand, "kiosk-hue-red") {
+	for brand == "" || favicon == "" || !strings.Contains(brand, "fk-hue-red") {
 		select {
 		case m, ok := <-msgs:
 			if !ok {
@@ -742,7 +742,7 @@ func TestColourChangeIsPushedToOpenPages(t *testing.T) {
 		}
 	}
 	if !strings.Contains(brand, "Foyer") ||
-		!strings.Contains(brand, `color: var(--kiosk-hue-red);`) {
+		!strings.Contains(brand, `color: var(--fk-hue-red);`) {
 		t.Errorf("the pushed header lacks the new name or colour:\n%s", brand)
 	}
 	if want := `c=` + strings.TrimPrefix(s.hues["red"], "#"); !strings.Contains(favicon, want) {

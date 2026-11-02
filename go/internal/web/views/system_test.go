@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/core"
 	"github.com/rnkch/flimmerkiste/internal/sysinfo"
 )
 
@@ -48,9 +48,9 @@ func TestThrottleState(t *testing.T) {
 
 // A link yt-dlp can't analyse still gets a preview: a warning and "play directly" only.
 func TestUnprobedPreview(t *testing.T) {
-	info := kiosk.UnprobedInfo(
+	info := core.UnprobedInfo(
 		"https://www.arte.tv/de/videos/1/x/",
-		&kiosk.ProbeError{Msg: "ERROR: No video formats found!"},
+		&core.ProbeError{Msg: "ERROR: No video formats found!"},
 	)
 	var b bytes.Buffer
 	URLPreview(info).Render(context.Background(), &b)
@@ -67,17 +67,17 @@ func TestUnprobedPreview(t *testing.T) {
 
 // Directly played links are looked up again on every pass; the preview warns about the wait.
 func TestDirectPlayWarning(t *testing.T) {
-	render := func(info kiosk.URLInfo) string {
+	render := func(info core.URLInfo) string {
 		var b bytes.Buffer
 		URLPreview(info).Render(context.Background(), &b)
 		return b.String()
 	}
-	web := render(kiosk.URLInfo{URL: "https://www.youtube.com/watch?v=x", Title: "t"})
+	web := render(core.URLInfo{URL: "https://www.youtube.com/watch?v=x", Title: "t"})
 	if !strings.Contains(web, "10 bis 30 Sekunden") {
 		t.Error("no warning for a web link")
 	}
 	if strings.Contains(
-		render(kiosk.DirectStreamInfo("rtsp://cam.local/live")),
+		render(core.DirectStreamInfo("rtsp://cam.local/live")),
 		"10 bis 30 Sekunden",
 	) {
 		t.Error("warning for an RTSP stream, which isn't looked up")

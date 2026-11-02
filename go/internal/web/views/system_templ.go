@@ -11,7 +11,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"fmt"
-	"github.com/rnkch/flimmerkiste/internal/kiosk"
+	"github.com/rnkch/flimmerkiste/internal/core"
 	"github.com/rnkch/flimmerkiste/internal/store/db"
 	"github.com/rnkch/flimmerkiste/internal/sysinfo"
 )
@@ -866,7 +866,7 @@ func UpgradeCardLoading() templ.Component {
 // UpgradeCard shows the running version and, when GitHub has a newer release,
 // the button to install it (the install blocks until it is downloaded and
 // checked, the spinner shows that). msg is why the check failed, if it did.
-func UpgradeCard(info kiosk.UpgradeInfo, msg string) templ.Component {
+func UpgradeCard(info core.UpgradeInfo, msg string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {

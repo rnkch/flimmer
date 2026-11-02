@@ -12,7 +12,7 @@ body {
   background-color: var(--wa-color-surface-lowered);
 }
 
-/* Film grain (theme.css: --kiosk-grain): blended into each surface's own
+/* Film grain (theme.css: --fk-grain): blended into each surface's own
    background, so text, icons and content drawn on top stay clean. Status
    colors (tags, switches, progress bars) stay plain. Inside Web Awesome
    components the background is painted by a part, not by the element.
@@ -26,12 +26,12 @@ wa-number-input::part(base),
 wa-textarea::part(base),
 wa-dropdown::part(menu),
 wa-dialog::part(dialog) {
-  background-image: var(--kiosk-grain);
+  background-image: var(--fk-grain);
   background-blend-mode: soft-light;
 }
 
 .shell {
-  max-width: var(--kiosk-content-width);
+  max-width: var(--fk-content-width);
   margin: 0 auto;
   padding: var(--wa-space-m);
 }
@@ -60,7 +60,7 @@ wa-dialog::part(dialog) {
   align-items: center;
   column-gap: var(--wa-space-s);
   row-gap: var(--wa-space-3xs);
-  max-width: var(--kiosk-content-width);
+  max-width: var(--fk-content-width);
   margin: 0 auto;
   padding: var(--wa-space-2xs) var(--wa-space-m);
 }
@@ -264,16 +264,16 @@ body:has(#lock[data-locked]) :is(.disturbs, li.current .disturbs-current) {
 /* --- forms: a narrow column, fields as wide as their content --- */
 
 .form-column {
-  max-inline-size: var(--kiosk-form-width);
+  max-inline-size: var(--fk-form-width);
 }
 
 /* Capped at the container, so they shrink on phones instead of overflowing. */
 .field-s {
-  inline-size: min(var(--kiosk-field-s), 100%);
+  inline-size: min(var(--fk-field-s), 100%);
 }
 
 .field-m {
-  inline-size: min(var(--kiosk-field-m), 100%);
+  inline-size: min(var(--fk-field-m), 100%);
 }
 
 /* Units ("kbit/s", "s") stay on one line; the number gets the rest. */
@@ -343,7 +343,7 @@ wa-card.panel::part(body) {
 
 .playlist > li {
   display: grid;
-  grid-template-columns: 2.75rem var(--kiosk-thumb-width) minmax(0, 1fr) 6.5rem 2rem;
+  grid-template-columns: 2.75rem var(--fk-thumb-width) minmax(0, 1fr) 6.5rem 2rem;
   align-items: center;
   gap: var(--wa-space-s);
   padding: var(--wa-space-2xs) var(--wa-space-s);
@@ -380,7 +380,7 @@ wa-card.panel::part(body) {
 
 .playlist .thumb img {
   display: block;
-  width: var(--kiosk-thumb-width);
+  width: var(--fk-thumb-width);
   aspect-ratio: 4 / 3;
   object-fit: cover;
   border-radius: var(--wa-border-radius-s);
@@ -513,7 +513,7 @@ wa-dialog.preview img {
 
 @media (width < 40rem) {
   .playlist > li {
-    grid-template-columns: 2.25rem var(--kiosk-thumb-width) minmax(0, 1fr) auto 2rem;
+    grid-template-columns: 2.25rem var(--fk-thumb-width) minmax(0, 1fr) auto 2rem;
   }
 }
 

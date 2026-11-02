@@ -249,7 +249,12 @@ func (s *Server) static(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) icon(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Cache-Control", "public, max-age=86400")
+	// app.js asks for ?v=<bundle hash>: that URL never changes its content.
+	if r.URL.Query().Get("v") != "" {
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	} else {
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+	}
 	http.ServeFileFS(w, r, s.icons, r.PathValue("name"))
 }
 

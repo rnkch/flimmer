@@ -101,6 +101,13 @@ func downloadable(m db.Media) bool {
 	return m.Kind == "stream" && m.DurationS > 0 && !kiosk.IsDirectStream(m.URL)
 }
 
+// assetVersion is the content hash in the bundle's file name ("app.3f2a9c1d.js"). It
+// versions the icon URLs (app.js), so icons can be cached for good and a new release
+// still brings new ones.
+func assetVersion(js string) string {
+	return strings.TrimSuffix(strings.TrimPrefix(js, "app."), ".js")
+}
+
 // pageLink makes a link a partial navigation: htmx fetches the page and swaps only
 // <main id="page"> (the header with its live connection, the icon cache and the
 // components stay), updates the title and the address, and refreshes the tabs

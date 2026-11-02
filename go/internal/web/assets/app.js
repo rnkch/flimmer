@@ -38,8 +38,13 @@ import { initDropUpload } from './drop.js';
 import { uploader } from './upload.js';
 import { seekBar } from './seek.js';
 
-// Icons are served from the binary instead of the Font Awesome CDN.
-registerIconLibrary('default', { resolver: (name) => `/static/icons/${name}.svg` });
+// Icons are served from the binary instead of the Font Awesome CDN. The URL carries the
+// bundle's content hash, so the browser can keep each icon for good and a new release
+// still gets new ones.
+const assetVersion = document.querySelector('meta[name="asset-version"]')?.content ?? '';
+registerIconLibrary('default', {
+  resolver: (name) => `/static/icons/${name}.svg?v=${assetVersion}`,
+});
 
 window.Alpine = Alpine;
 Alpine.data('uploader', uploader);

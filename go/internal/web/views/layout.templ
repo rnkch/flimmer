@@ -10,6 +10,7 @@ import (
 templ head(title, css, js string) {
 	<meta charset="utf-8"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+	<meta name="asset-version" content={ assetVersion(js) }/>
 	<meta name="htmx-config" content='{"extensions": "sse, alpine-compat, keep-overlays"}'/>
 	<title>{ title } · Flimmerkiste</title>
 	<!-- Follow the OS color scheme before first paint (theme.css has both). -->
@@ -43,7 +44,7 @@ templ Layout(p Page) {
 			@head(t(ctx, p.Title), p.CSS, p.JS)
 		</head>
 		<body data-i18n={ jsStrings(ctx) }>
-			<header class="topbar">
+			<header class="topbar wa-cloak">
 				<div class="topbar-inner">
 					@BrandName(p.Name, p.NameSet, p.Hue)
 					@LockButton(p.Locked)
@@ -75,7 +76,7 @@ templ Layout(p Page) {
 			<!-- Live updates: unnamed messages carry <hx-partial>s, named events
 			     ("player", "playlist", "job", ...) bubble to body for hx-trigger="... from:body". -->
 			<div hx-sse:connect="/events" hidden></div>
-			<main id="page" class="shell wa-stack wa-gap-m">
+			<main id="page" class="shell wa-stack wa-gap-m wa-cloak">
 				{ children... }
 			</main>
 			<wa-toast placement="bottom-end"></wa-toast>
@@ -182,7 +183,7 @@ templ Login(css, js, errMsg string, noPassword bool) {
 			@head(t(ctx, "Log in"), css, js)
 		</head>
 		<body data-i18n={ jsStrings(ctx) }>
-			<main class="login">
+			<main class="login wa-cloak">
 				<wa-card>
 					<form method="post" action="/login" class="wa-stack">
 						<div class="wa-split">

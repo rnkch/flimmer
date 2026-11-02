@@ -346,3 +346,39 @@ func TestNavigationIsPartial(t *testing.T) {
 		}
 	}
 }
+
+// Icons are cached for good under a versioned URL (the bundle's content hash, from the
+// asset-version meta); without a version they keep the short cache.
+func TestIconCachingAndAssetVersion(t *testing.T) {
+	s, _ := newServer(t)
+	cache := func(url string) string {
+		rec := httptest.NewRecorder()
+		s.Handler().ServeHTTP(rec, httptest.NewRequest("GET", url, nil))
+		if rec.Code != 200 {
+			t.Fatalf("%s: %d", url, rec.Code)
+		}
+		return rec.Header().Get("Cache-Control")
+	}
+	if got := cache("/static/icons/tv.svg?v=abc123"); got != "public, max-age=31536000, immutable" {
+		t.Errorf("versioned icon: %q", got)
+	}
+	if got := cache("/static/icons/tv.svg"); got != "public, max-age=86400" {
+		t.Errorf("unversioned icon: %q", got)
+	}
+
+	rec := httptest.NewRecorder()
+	s.Handler().ServeHTTP(rec, httptest.NewRequest("GET", "/login", nil))
+	body := rec.Body.String()
+	m := regexp.MustCompile(`name="asset-version" content="([0-9A-Za-z]+)"`).
+		FindStringSubmatch(body)
+	if m == nil {
+		t.Fatalf("no asset-version meta:\n%s", body)
+	}
+	if !strings.Contains(body, `/static/app.`+m[1]+`.js`) {
+		t.Errorf("asset-version %q is not the bundle's hash (%s)", m[1], s.bundle.JS.Name)
+	}
+	// Hidden until its components are defined, so a page doesn't show unstyled.
+	if !strings.Contains(body, `class="login wa-cloak"`) {
+		t.Errorf("the login page isn't cloaked")
+	}
+}

@@ -957,7 +957,11 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 	defer clock.Stop()
 	keepAlive := time.NewTicker(20 * time.Second)
 	defer keepAlive.Stop()
-	fl.Flush()
+	// Every connection starts with the boot id: a page that reconnects after a
+	// restart sees another one and reloads (app.js, "boot").
+	if !send("boot", s.boot) {
+		return
+	}
 	for {
 		select {
 		case <-ctx.Done():

@@ -36,8 +36,9 @@ type Server struct {
 	bundle bundle.Result
 	icons  fs.FS
 
-	// boot is new on every start; every response carries it (X-Boot) so a page
-	// can tell that the server has restarted (app.js, "serverRestarting").
+	// boot is new on every start. Every response carries it (X-Boot) and every live
+	// connection (/events) opens with it, so a page can tell that the server has
+	// restarted (app.js, "boot" and "serverRestarting").
 	boot string
 
 	loginMu  sync.Mutex

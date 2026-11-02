@@ -1,6 +1,7 @@
 package web
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rnkch/flimmerkiste/internal/kiosk"
 	"github.com/rnkch/flimmerkiste/internal/mpv"
@@ -221,5 +223,50 @@ func TestDisableEntryOverHTTP(t *testing.T) {
 	}
 	if sum := do("GET", "/playlist/summary", nil); strings.Contains(sum, "disabled") {
 		t.Errorf("summary still mentions disabled entries: %s", sum)
+	}
+}
+
+// A live connection (/events) opens with the boot id, so a page that
+// reconnects after a restart can tell (app.js, "boot").
+func TestEventsOpenWithBootID(t *testing.T) {
+	first := func(s *Server, k *kiosk.Service) (event, data string) {
+		t.Helper()
+		token, err := k.Login(context.Background(), "test-password-123")
+		if err != nil {
+			t.Fatal(err)
+		}
+		srv := httptest.NewServer(s.Handler())
+		defer srv.Close()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		req, _ := http.NewRequestWithContext(ctx, "GET", srv.URL+"/events", nil)
+		req.AddCookie(&http.Cookie{Name: sessionCookie, Value: token})
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		sc := bufio.NewScanner(resp.Body)
+		for sc.Scan() && sc.Text() != "" { // the first message ends at the blank line
+			switch line := sc.Text(); {
+			case strings.HasPrefix(line, "event: "):
+				event = strings.TrimPrefix(line, "event: ")
+			case strings.HasPrefix(line, "data: "):
+				data = strings.TrimPrefix(line, "data: ")
+			}
+		}
+		return event, data
+	}
+	a, ka := newServer(t)
+	b, kb := newServer(t)
+	ev, id := first(a, ka)
+	if ev != "boot" || id != a.boot || id == "" {
+		t.Fatalf("first message: event %q data %q, boot id %q", ev, id, a.boot)
+	}
+	if ev2, id2 := first(a, ka); ev2 != "boot" || id2 != id {
+		t.Fatalf("a second connection to the same start: %q %q, want %q", ev2, id2, id)
+	}
+	if _, idB := first(b, kb); idB == id {
+		t.Fatal("two starts share a boot id")
 	}
 }

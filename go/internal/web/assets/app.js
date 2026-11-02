@@ -52,27 +52,50 @@ initDropUpload();
 // Inline editors arrive with [autofocus]; focus them after the swap.
 htmx.onLoad((elt) => elt.querySelector?.('[autofocus]')?.focus());
 
-// After the service restarts itself (an upgrade, "Restart service") the server sends
-// HX-Trigger "serverRestarting". The page is stale then (new version, maybe new assets),
-// so wait until the server answers again with another boot id (X-Boot) and reload. A
-// server that is down gives no id; whatever answers next counts as the new one. Gives up
-// waiting after two minutes and reloads anyway.
+// The server restarts itself (an upgrade, "Restart service", /upgrade or /restart in
+// Telegram) or crashes, and the page is stale then: a new version, maybe new asset names.
+// Two ways to notice, both ending in one reload:
+//
+// 1. Every live connection (/events, see the hx-sse element in the layout) starts with a
+//    "boot" event carrying a random id that is new on every start of the server. The
+//    connection drops while the server is down and htmx reconnects by itself (0.5 s,
+//    doubling, up to a minute). If the id after a reconnect isn't the one this page
+//    began with, the server has restarted. This reaches every open tab, whoever
+//    started the restart.
+// 2. The tab that asked for the restart also gets HX-Trigger "serverRestarting" and polls
+//    /login (every 1.5 s, X-Boot header) so it doesn't wait for the reconnect backoff.
+//    It gives up after two minutes and reloads anyway.
+let reloading = false;
+const reloadOnce = () => {
+  if (!reloading) {
+    reloading = true;
+    location.reload();
+  }
+};
+
+let bootId = null;
+document.addEventListener('boot', (e) => {
+  const id = e.detail.data;
+  if (bootId !== null && id !== bootId) reloadOnce();
+  bootId ??= id;
+});
+
 document.addEventListener('serverRestarting', async () => {
-  const bootId = async () => {
+  const currentBootId = async () => {
     try {
       return (await fetch('/login', { cache: 'no-store' })).headers.get('X-Boot');
     } catch {
-      return null;
+      return null; // the server is down
     }
   };
-  const before = await bootId();
+  const before = await currentBootId();
   const until = Date.now() + 120_000;
-  while (Date.now() < until) {
+  while (Date.now() < until && !reloading) {
     await new Promise((resolve) => setTimeout(resolve, 1500));
-    const now = await bootId();
+    const now = await currentBootId();
     if (now && now !== before) break;
   }
-  location.reload();
+  reloadOnce();
 });
 
 // Notifications. The server sends HX-Trigger: {"showToast": {"message", "variant"}};

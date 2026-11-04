@@ -2,10 +2,13 @@ package web
 
 import (
 	"bufio"
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
 	"image/png"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -758,5 +761,44 @@ func TestFooterLinksToGitHub(t *testing.T) {
 	if body := rec.Body.String(); !strings.Contains(body, `<footer class="site-footer`) ||
 		!strings.Contains(body, `href="https://github.com/rnkch/flimmerkiste"`) {
 		t.Fatal("no footer with the GitHub link on the login page")
+	}
+}
+
+// The JS and CSS bundle is sent gzipped to browsers that accept it, and as it is to the rest.
+func TestStaticBundleGzip(t *testing.T) {
+	s, _ := newServer(t)
+	get := func(path, enc string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", path, nil)
+		if enc != "" {
+			req.Header.Set("Accept-Encoding", enc)
+		}
+		s.Handler().ServeHTTP(rec, req)
+		return rec
+	}
+	for _, f := range []string{s.bundle.JS.Name, s.bundle.CSS.Name} {
+		plain := get("/static/"+f, "")
+		if plain.Code != 200 || plain.Header().Get("Content-Encoding") != "" ||
+			plain.Header().Get("Vary") != "Accept-Encoding" {
+			t.Fatalf("%s plain: %d %v", f, plain.Code, plain.Header())
+		}
+		for _, enc := range []string{"gzip", "br, gzip;q=0.8", "deflate, GZIP"} {
+			rec := get("/static/"+f, enc)
+			if rec.Header().Get("Content-Encoding") != "gzip" {
+				t.Fatalf("%s with %q: not compressed", f, enc)
+			}
+			zr, err := gzip.NewReader(rec.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, _ := io.ReadAll(zr)
+			if !bytes.Equal(got, plain.Body.Bytes()) || rec.Body.Len() >= plain.Body.Len()/2 {
+				t.Fatalf("%s: unpacked differs, or %d bytes is not much smaller than %d",
+					f, rec.Body.Len(), plain.Body.Len())
+			}
+		}
+		if get("/static/"+f, "gzip;q=0").Header().Get("Content-Encoding") != "" {
+			t.Fatal("gzip sent although q=0")
+		}
 	}
 }

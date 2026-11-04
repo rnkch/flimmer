@@ -4,6 +4,8 @@
 package web
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/rand"
 	"crypto/tls"
@@ -14,6 +16,8 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -33,6 +37,7 @@ type Server struct {
 	k      *core.Service
 	certs  *access.Certs // nil without HTTPS
 	bundle bundle.Result
+	gz     map[string][]byte // gzip copies of the bundle files, by name
 	icons  fs.FS
 	pwa    fs.FS
 	hues   map[string]string // hue name -> hex, for the favicon (favicon.go)
@@ -69,8 +74,17 @@ func New(k *core.Service, certs *access.Certs) (*Server, error) {
 		return nil, err
 	}
 	return &Server{
-		k: k, certs: certs, bundle: res, icons: icons, pwa: pwa, hues: huePalette(files),
-		boot: hex.EncodeToString(id),
+		k:      k,
+		certs:  certs,
+		bundle: res,
+		icons:  icons,
+		pwa:    pwa,
+		hues:   huePalette(files),
+		boot:   hex.EncodeToString(id),
+		gz: map[string][]byte{
+			res.JS.Name:  gzipBytes(res.JS.Contents),
+			res.CSS.Name: gzipBytes(res.CSS.Contents),
+		},
 	}, nil
 }
 
@@ -243,18 +257,47 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) static(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	var body []byte
 	switch name {
 	case s.bundle.JS.Name:
 		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
-		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
-		w.Write(s.bundle.JS.Contents)
+		body = s.bundle.JS.Contents
 	case s.bundle.CSS.Name:
 		w.Header().Set("Content-Type", "text/css; charset=utf-8")
-		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
-		w.Write(s.bundle.CSS.Contents)
+		body = s.bundle.CSS.Contents
 	default:
 		http.NotFound(w, r)
+		return
 	}
+	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	w.Header().Set("Vary", "Accept-Encoding")
+	if gz := s.gz[name]; gz != nil && acceptsGzip(r) { // compressed once, at startup
+		w.Header().Set("Content-Encoding", "gzip")
+		body = gz
+	}
+	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+	w.Write(body)
+}
+
+// gzipBytes compresses b at the best level; the bundle is built once and served for as long as
+// the process runs, so the time (a fraction of a second) is spent only at startup.
+func gzipBytes(b []byte) []byte {
+	var buf bytes.Buffer
+	zw, _ := gzip.NewWriterLevel(&buf, gzip.BestCompression)
+	zw.Write(b)
+	zw.Close()
+	return buf.Bytes()
+}
+
+// acceptsGzip reports whether the client lists gzip (and doesn't switch it off with q=0).
+func acceptsGzip(r *http.Request) bool {
+	for _, part := range strings.Split(r.Header.Get("Accept-Encoding"), ",") {
+		enc, q, _ := strings.Cut(strings.TrimSpace(part), ";")
+		if strings.EqualFold(strings.TrimSpace(enc), "gzip") {
+			return strings.TrimSpace(q) != "q=0" && strings.TrimSpace(q) != "q=0.0"
+		}
+	}
+	return false
 }
 
 func (s *Server) icon(w http.ResponseWriter, r *http.Request) {

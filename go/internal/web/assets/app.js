@@ -5,30 +5,10 @@ import 'htmx.org/ext/hx-sse.js';
 import 'htmx.org/ext/hx-alpine-compat.js';
 import Alpine from 'alpinejs';
 
-import '@awesome.me/webawesome/components/badge/badge.js';
-import '@awesome.me/webawesome/components/button/button.js';
-import '@awesome.me/webawesome/components/button-group/button-group.js';
-import '@awesome.me/webawesome/components/callout/callout.js';
-import '@awesome.me/webawesome/components/card/card.js';
-import '@awesome.me/webawesome/components/dialog/dialog.js';
-import '@awesome.me/webawesome/components/divider/divider.js';
-import '@awesome.me/webawesome/components/dropdown/dropdown.js';
-import '@awesome.me/webawesome/components/dropdown-item/dropdown-item.js';
-import '@awesome.me/webawesome/components/format-bytes/format-bytes.js';
-import '@awesome.me/webawesome/components/icon/icon.js';
-import '@awesome.me/webawesome/components/input/input.js';
-import '@awesome.me/webawesome/components/number-input/number-input.js';
-import '@awesome.me/webawesome/components/option/option.js';
-import '@awesome.me/webawesome/components/popover/popover.js';
-import '@awesome.me/webawesome/components/progress-bar/progress-bar.js';
-import '@awesome.me/webawesome/components/select/select.js';
-import '@awesome.me/webawesome/components/spinner/spinner.js';
-import '@awesome.me/webawesome/components/switch/switch.js';
-import '@awesome.me/webawesome/components/tag/tag.js';
-import '@awesome.me/webawesome/components/textarea/textarea.js';
-import '@awesome.me/webawesome/components/toast/toast.js';
-import '@awesome.me/webawesome/components/toast-item/toast-item.js';
-import '@awesome.me/webawesome/components/tooltip/tooltip.js';
+// Every <wa-...> component the templates use (generated: go run ./internal/web/cmd/components),
+// and the ones only scripts create (written by hand).
+import './components.js';
+import './components-extra.js';
 // Web Awesome's own strings (close buttons, etc.) and number formats follow <html lang>.
 import '@awesome.me/webawesome/translations/de.js';
 import { registerIconLibrary } from '@awesome.me/webawesome/components/icon/library.js';

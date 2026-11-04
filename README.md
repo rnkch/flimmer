@@ -149,7 +149,10 @@ git config core.hooksPath .githooks   # once: the pre-commit hook checks the sta
 Templates are [templ](https://templ.guide) (`go tool templ generate
 ./internal/web/views`), queries [sqlc](https://sqlc.dev) (`go tool sqlc
 generate`). The browser code (htmx, Alpine.js, Web Awesome) is vendored and
-bundled with esbuild at startup.
+bundled with esbuild at startup. Web Awesome components are registered for every `<wa-…>`
+tag in the templates, helpers and scripts (`go run ./internal/web/cmd/components`, also run by
+`go run ./internal/web/cmd/vendor`); a test fails when `assets/components.js` is out of date.
+Components that only scripts create are registered by hand in `assets/components-extra.js`.
 
 ## License
 

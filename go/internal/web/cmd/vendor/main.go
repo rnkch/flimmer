@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/rnkch/flimmerkiste/internal/web/bundle"
+	"github.com/rnkch/flimmerkiste/internal/web/components"
 )
 
 type pkg struct {
@@ -91,6 +92,10 @@ func main() {
 	webDir, _ := filepath.Abs("internal/web")
 	if _, err := os.Stat(filepath.Join(webDir, "assets", "app.js")); err != nil {
 		log.Fatal("run from rpi/go")
+	}
+	// The components the templates use decide what is vendored.
+	if _, err := components.Generate(webDir); err != nil {
+		log.Fatal(err)
 	}
 	tmp, err := os.MkdirTemp("", "vendor")
 	if err != nil {

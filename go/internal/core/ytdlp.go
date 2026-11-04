@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"math"
 	"net/url"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
@@ -121,7 +122,7 @@ type ytInfo struct {
 func (s *Service) ProbeURL(ctx context.Context, url string) (URLInfo, error) {
 	ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
 	defer cancel()
-	out, err := exec.CommandContext(ctx, s.cfg.YtDlp, "-J", "--no-playlist", "--no-warnings", "--", url).
+	out, err := s.ytdlp(ctx, "-J", "--no-playlist", "--no-warnings", "--", url).
 		Output()
 	if err != nil {
 		var ee *exec.ExitError
@@ -151,7 +152,7 @@ func (s *Service) ProbeURL(ctx context.Context, url string) (URLInfo, error) {
 // and the like): it takes the first video, as mpv does when it is given such a link, and says
 // how many there are. yt-dlp lists the entries without opening them (--flat-playlist).
 func (s *Service) probeFirstOfPlaylist(ctx context.Context, link string) (URLInfo, error) {
-	out, err := exec.CommandContext(ctx, s.cfg.YtDlp, "-J", "--flat-playlist", "--no-warnings", "--", link).
+	out, err := s.ytdlp(ctx, "-J", "--flat-playlist", "--no-warnings", "--", link).
 		Output()
 	if err != nil {
 		return URLInfo{}, ErrPlaylist
@@ -185,7 +186,7 @@ func (s *Service) probeFirstOfPlaylist(ctx context.Context, link string) (URLInf
 
 // probeEntry analyses one video of a playlist.
 func (s *Service) probeEntry(ctx context.Context, first string) (URLInfo, error) {
-	out, err := exec.CommandContext(ctx, s.cfg.YtDlp, "-J", "--no-playlist", "--no-warnings", "--", first).
+	out, err := s.ytdlp(ctx, "-J", "--no-playlist", "--no-warnings", "--", first).
 		Output()
 	if err != nil {
 		var ee *exec.ExitError
@@ -402,11 +403,32 @@ func parseProgress(line string) (id string, pct float64, ok bool) {
 	return f[1], pct, true
 }
 
+// ytdlp builds a yt-dlp command that runs at a low priority (nice 15, on top of the service's
+// own): starting it, and the JavaScript runtime it uses for YouTube, takes a lot of CPU, and
+// playback must not stutter meanwhile. Children inherit the priority, deno included.
+func (s *Service) ytdlp(ctx context.Context, args ...string) *exec.Cmd {
+	return exec.CommandContext(ctx, "nice", append([]string{"-n", "15", s.cfg.YtDlp}, args...)...)
+}
+
+// YtDlpNiceWrapper writes a small script that runs yt-dlp at a low priority and returns its
+// path. mpv starts yt-dlp itself when it plays a web link (ytdl_hook), as a child of mpv, which
+// has a high priority of its own; mpv's ytdl_path points at this script instead.
+func YtDlpNiceWrapper(dir string) (string, error) {
+	path := filepath.Join(dir, "yt-dlp-nice")
+	const script = "#!/bin/sh\nexec nice -n 15 yt-dlp \"$@\"\n"
+	if b, err := os.ReadFile(path); err == nil && string(b) == script {
+		return path, nil
+	}
+	if err := os.WriteFile(path+".tmp", []byte(script), 0o755); err != nil {
+		return "", err
+	}
+	return path, os.Rename(path+".tmp", path)
+}
+
 func (s *Service) download(ctx context.Context, j db.Job) (string, error) {
 	parts := strings.Count(j.Format, "+") + 1
-	cmd := exec.CommandContext(
+	cmd := s.ytdlp(
 		ctx,
-		s.cfg.YtDlp,
 		"--no-playlist",
 		"--no-warnings",
 		"--no-mtime",
@@ -483,7 +505,7 @@ func (s *Service) YtDlpVersion(ctx context.Context) string {
 	if ytVersion.v == "" {
 		ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		defer cancel()
-		if out, err := exec.CommandContext(ctx, s.cfg.YtDlp, "--version").Output(); err == nil {
+		if out, err := s.ytdlp(ctx, "--version").Output(); err == nil {
 			ytVersion.v = strings.TrimSpace(string(out))
 		}
 	}
@@ -494,7 +516,7 @@ func (s *Service) YtDlpVersion(ctx context.Context) string {
 func (s *Service) UpdateYtDlp(ctx context.Context) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
 	defer cancel()
-	out, err := exec.CommandContext(ctx, s.cfg.YtDlp, "-U").CombinedOutput()
+	out, err := s.ytdlp(ctx, "-U").CombinedOutput()
 	ytVersion.Lock()
 	ytVersion.v = ""
 	ytVersion.Unlock()

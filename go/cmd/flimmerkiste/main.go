@@ -163,12 +163,17 @@ func run(
 		Nmcli:         strings.Fields(nmcli),
 		FallbackWifi:  fallbackWifi,
 	}
+	mpvBase := []string{"--loop-playlist=inf", "--image-display-duration=5"}
+	// mpv runs yt-dlp itself for web links; at a low priority, or playback stutters meanwhile.
+	if wrapper, err := core.YtDlpNiceWrapper(dataDir); err != nil {
+		slog.Warn("yt-dlp priority wrapper", "err", err)
+	} else {
+		mpvBase = append(mpvBase, "--script-opts=ytdl_hook-ytdl_path="+wrapper)
+	}
 	player := &mpv.Player{
 		Bin:    "mpv",
 		Socket: socket,
-		Args: append(
-			[]string{"--loop-playlist=inf", "--image-display-duration=5"},
-			strings.Fields(mpvArgs)...),
+		Args:   append(mpvBase, strings.Fields(mpvArgs)...),
 	}
 	k := core.New(cfg, st, player)
 	if k.CheckPendingUpgrade() {

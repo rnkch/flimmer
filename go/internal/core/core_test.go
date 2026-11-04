@@ -995,3 +995,42 @@ esac
 		t.Fatalf("%+v", info)
 	}
 }
+
+// yt-dlp (and the deno it starts) runs at a low priority so playback doesn't stutter.
+func TestYtDlpRunsNiced(t *testing.T) {
+	s, _ := newTestService(t)
+	fake := filepath.Join(t.TempDir(), "yt-dlp")
+	os.WriteFile(fake, []byte("#!/bin/sh\nnice\n"), 0o755)
+	s.cfg.YtDlp = fake
+	base, _ := exec.Command("nice").Output()
+	child, err := s.ytdlp(context.Background()).Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := strconv.Atoi(strings.TrimSpace(string(base)))
+	c, _ := strconv.Atoi(strings.TrimSpace(string(child)))
+	if want := min(b+15, 19); c != want {
+		t.Fatalf("yt-dlp runs at nice %d, want %d (test process: %d)", c, want, b)
+	}
+}
+
+// The wrapper mpv uses for its own yt-dlp calls is written once, executable, and kept as it is.
+func TestYtDlpNiceWrapper(t *testing.T) {
+	dir := t.TempDir()
+	path, err := YtDlpNiceWrapper(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(path)
+	fi, _ := os.Stat(path)
+	if !strings.Contains(string(b), "nice -n 15 yt-dlp") || fi.Mode()&0o111 == 0 {
+		t.Fatalf("wrapper: %q, mode %v", b, fi.Mode())
+	}
+	before, _ := os.Stat(path)
+	if _, err := YtDlpNiceWrapper(dir); err != nil {
+		t.Fatal(err)
+	}
+	if after, _ := os.Stat(path); !after.ModTime().Equal(before.ModTime()) {
+		t.Fatal("rewritten although unchanged")
+	}
+}

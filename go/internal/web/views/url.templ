@@ -13,13 +13,37 @@ import (
 // the add form, so name, position and duration are posted with them.
 templ URLPreview(info core.URLInfo) {
 	<hx-partial hx-target="#url-result" hx-swap="innerHTML">
-		<div class="url-preview" data-title={ info.Title } x-init="linkChecked($el.dataset.title)">
-			<input type="hidden" name="checked_url" value={ info.URL }/>
-			<input type="hidden" name="page_title" value={ info.Title }/>
-			<input type="hidden" name="thumbnail" value={ info.Thumbnail }/>
-			<input type="hidden" name="duration" value={ fmt.Sprint(info.Duration) }/>
+		<div
+			class="url-preview"
+			data-title={ info.Title }
+			x-init="linkChecked($el.dataset.title)"
+		>
+			<input
+				type="hidden"
+				name="checked_url"
+				value={ info.URL }
+			/>
+			<input
+				type="hidden"
+				name="page_title"
+				value={ info.Title }
+			/>
+			<input
+				type="hidden"
+				name="thumbnail"
+				value={ info.Thumbnail }
+			/>
+			<input
+				type="hidden"
+				name="duration"
+				value={ fmt.Sprint(info.Duration) }
+			/>
 			if info.Thumbnail != "" {
-				<img src={ info.Thumbnail } alt="" referrerpolicy="no-referrer"/>
+				<img
+					src={ info.Thumbnail }
+					alt=""
+					referrerpolicy="no-referrer"
+				/>
 			} else {
 				<div class="no-thumb"><wa-icon name="tower-broadcast"></wa-icon></div>
 			}
@@ -51,17 +75,32 @@ templ URLPreview(info core.URLInfo) {
 				} else if len(info.Formats) > 1 || (len(info.Formats) == 1 && info.Formats[0].Height > 0) {
 					@formatSelect(info, info.Auto)
 				} else if len(info.Formats) == 1 {
-					<input type="hidden" name="format" value={ formatValue(info, info.Auto) }/>
+					<input
+						type="hidden"
+						name="format"
+						value={ formatValue(info, info.Auto) }
+					/>
 				}
 			</div>
 		</div>
 	</hx-partial>
 	<hx-partial hx-target="#url-actions" hx-swap="innerHTML">
-		<wa-button size="s" variant="brand" hx-post="/url/add" hx-vals='{"mode": "stream"}' hx-swap="none">
+		<wa-button
+			size="s"
+			variant="brand"
+			hx-post="/url/add"
+			hx-vals='{"mode": "stream"}'
+			hx-swap="none"
+		>
 			<wa-icon slot="start" name="play"></wa-icon> { t(ctx, "Play directly") }
 		</wa-button>
 		if !info.Live {
-			<wa-button size="s" hx-post="/url/add" hx-vals='{"mode": "download"}' hx-swap="none">
+			<wa-button
+				size="s"
+				hx-post="/url/add"
+				hx-vals='{"mode": "download"}'
+				hx-swap="none"
+			>
 				<wa-icon slot="start" name="download"></wa-icon> { t(ctx, "Download") }
 			</wa-button>
 		}
@@ -84,12 +123,23 @@ templ URLPreview(info core.URLInfo) {
 }
 
 templ formatSelect(info core.URLInfo, selected string) {
-	<wa-select name="format" size="s" label={ t(ctx, "Format") } value={ formatValue(info, selected) }>
+	<wa-select
+		name="format"
+		size="s"
+		label={ t(ctx, "Format") }
+		value={ formatValue(info, selected) }
+	>
 		for _, f := range info.Formats {
 			<wa-option value={ formatValue(info, f.Spec) }>
 				{ formatLabel(ctx, f) }
 				if f.Auto(info) {
-					<wa-tag slot="end" size="xs" variant="brand">{ t(ctx, "best for the CRT") }</wa-tag>
+					<wa-tag
+						slot="end"
+						size="xs"
+						variant="brand"
+					>
+						{ t(ctx, "best for the CRT") }
+					</wa-tag>
 				} else if f.Heavy() {
 					<span slot="end" class="wa-caption-xs">{ t(ctx, "may be too much for the Pi") }</span>
 				} else if f.Slow {
@@ -102,12 +152,30 @@ templ formatSelect(info core.URLInfo, selected string) {
 
 // FormatDialog changes the format of a stream entry.
 templ FormatDialog(m db.Media, info core.URLInfo, current string) {
-	<wa-dialog label={ t(ctx, "Change format") } open light-dismiss>
-		<form id="format-form" class="wa-stack wa-gap-s" hx-post={ mediaURL(m, "/format") } hx-target="#preview" hx-swap="innerHTML">
+	<wa-dialog
+		label={ t(ctx, "Change format") }
+		open
+		light-dismiss
+	>
+		<form
+			id="format-form"
+			class="wa-stack wa-gap-s"
+			hx-post={ mediaURL(m, "/format") }
+			hx-target="#preview"
+			hx-swap="innerHTML"
+		>
 			<span class="wa-caption-s">{ m.Title }</span>
 			@formatSelect(info, current)
 		</form>
-		<wa-button slot="footer" type="submit" form="format-form" variant="brand" size="s">{ t(ctx, "Save") }</wa-button>
+		<wa-button
+			slot="footer"
+			type="submit"
+			form="format-form"
+			variant="brand"
+			size="s"
+		>
+			{ t(ctx, "Save") }
+		</wa-button>
 	</wa-dialog>
 }
 

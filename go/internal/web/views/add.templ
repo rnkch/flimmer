@@ -10,22 +10,54 @@ templ AddPage(p Page, jobs []db.Job, freeBytes uint64, defaultSeconds int) {
 			<span class="wa-caption-s"><wa-icon name="hard-drive"></wa-icon> <wa-format-bytes value={ itoa(int64(freeBytes)) }></wa-format-bytes> { t(ctx, "free") }</span>
 		}
 		<wa-card>
-			<form id="add-form" action="/upload" method="post" enctype="multipart/form-data" class="wa-stack wa-gap-s"
-				x-data="uploader" x-on:submit.prevent="send($el)" x-on:added.window="reset($el)">
+			<form
+				id="add-form"
+				action="/upload"
+				method="post"
+				enctype="multipart/form-data"
+				class="wa-stack wa-gap-s"
+				x-data="uploader"
+				x-on:submit.prevent="send($el)"
+				x-on:added.window="reset($el)"
+			>
 				<div class="sources">
 					<label class="dropzone">
 						<wa-icon name="file-arrow-up" style="font-size: var(--wa-font-size-2xl);"></wa-icon>
-						<div x-text="files || $el.dataset.empty" data-empty={ t(ctx, "Drop images or videos here or choose them – any size") }></div>
+						<div
+							x-text="files || $el.dataset.empty"
+							data-empty={ t(ctx, "Drop images or videos here or choose them – any size") }
+						></div>
 						<!-- The browser's own file button can't be translated; the whole zone is the button. -->
-						<input type="file" name="files" multiple accept="image/*,video/*,.heic,.heif,.mkv" class="wa-visually-hidden" x-on:change="pick($el)"/>
+						<input
+							type="file"
+							name="files"
+							multiple
+							accept="image/*,video/*,.heic,.heif,.mkv"
+							class="wa-visually-hidden"
+							x-on:change="pick($el)"
+						/>
 					</label>
 					<span class="wa-caption-s">{ t(ctx, "or") }</span>
 					<div class="wa-cluster wa-gap-xs link-row">
-						<wa-input name="url" type="url" size="s" placeholder={ t(ctx, "Link: YouTube, video file, stream …") } aria-label="URL"
-							x-on:input="linkTyped($el)" x-on:keydown.enter.prevent="$refs.check.click()">
+						<wa-input
+							name="url"
+							type="url"
+							size="s"
+							placeholder={ t(ctx, "Link: YouTube, video file, stream …") }
+							aria-label="URL"
+							x-on:input="linkTyped($el)"
+							x-on:keydown.enter.prevent="$refs.check.click()"
+						>
 							<wa-icon slot="start" name="link"></wa-icon>
 						</wa-input>
-						<wa-button x-ref="check" size="s" hx-get="/url/check" hx-include="[name=url]" hx-target="#url-result" hx-indicator="#url-checking">
+						<wa-button
+							x-ref="check"
+							size="s"
+							hx-get="/url/check"
+							hx-include="[name=url]"
+							hx-target="#url-result"
+							hx-indicator="#url-checking"
+						>
 							{ t(ctx, "Check") }
 						</wa-button>
 						<wa-spinner id="url-checking" class="htmx-indicator"></wa-spinner>
@@ -33,23 +65,70 @@ templ AddPage(p Page, jobs []db.Job, freeBytes uint64, defaultSeconds int) {
 				</div>
 				<div id="url-result"></div>
 				<div class="wa-cluster wa-gap-s wa-align-items-start">
-					<wa-input class="field-m" name="title" label={ t(ctx, "Name") } x-bind:placeholder="title || $el.dataset.fallback" data-fallback={ t(ctx, "File name") } size="s"></wa-input>
-					<wa-number-input class="field-s" name="position" label={ t(ctx, "Position") } placeholder={ t(ctx, "End") } min="1" size="s" without-steppers></wa-number-input>
-					<wa-number-input name="seconds" label={ t(ctx, "Display duration") } hint={ t(ctx, "Images only") } placeholder={ itoa(defaultSeconds) } min="1" size="s" without-steppers class="field-s">
+					<wa-input
+						class="field-m"
+						name="title"
+						label={ t(ctx, "Name") }
+						x-bind:placeholder="title || $el.dataset.fallback"
+						data-fallback={ t(ctx, "File name") }
+						size="s"
+					></wa-input>
+					<wa-number-input
+						class="field-s"
+						name="position"
+						label={ t(ctx, "Position") }
+						placeholder={ t(ctx, "End") }
+						min="1"
+						size="s"
+						without-steppers
+					></wa-number-input>
+					<wa-number-input
+						name="seconds"
+						label={ t(ctx, "Display duration") }
+						hint={ t(ctx, "Images only") }
+						placeholder={ itoa(defaultSeconds) }
+						min="1"
+						size="s"
+						without-steppers
+						class="field-s"
+					>
 						<span slot="end">s</span>
 					</wa-number-input>
 				</div>
-				<wa-switch name="no_transcode" value="1" size="s" hint={ t(ctx, "Takes the file as it is, whatever its format. H.264 videos up to 720p are kept anyway; use this for others you know play smoothly on the Pi.") }>
+				<wa-switch
+					name="no_transcode"
+					value="1"
+					size="s"
+					hint={ t(ctx, "Takes the file as it is, whatever its format. H.264 videos up to 720p are kept anyway; use this for others you know play smoothly on the Pi.") }
+				>
 					{ t(ctx, "Don't convert videos") }
 				</wa-switch>
 				<div class="wa-cluster wa-gap-xs">
-					<wa-button type="submit" variant="brand" size="s" x-show="mode === 'files'" x-cloak x-bind:loading="busy" x-bind:disabled="busy">
+					<wa-button
+						type="submit"
+						variant="brand"
+						size="s"
+						x-show="mode === 'files'"
+						x-cloak
+						x-bind:loading="busy"
+						x-bind:disabled="busy"
+					>
 						<wa-icon slot="start" name="plus"></wa-icon> { t(ctx, "Add") }
 					</wa-button>
-					<div id="url-actions" class="wa-cluster wa-gap-xs" x-show="mode !== 'files'"></div>
+					<div
+						id="url-actions"
+						class="wa-cluster wa-gap-xs"
+						x-show="mode !== 'files'"
+					></div>
 					<span class="wa-caption-xs" x-show="mode === ''">{ t(ctx, "Choose files or check a link.") }</span>
 				</div>
-				<wa-progress-bar x-show="busy" x-cloak x-bind:value="percent"><span x-text="percent + ' %'"></span></wa-progress-bar>
+				<wa-progress-bar
+					x-show="busy"
+					x-cloak
+					x-bind:value="percent"
+				>
+					<span x-text="percent + ' %'"></span>
+				</wa-progress-bar>
 			</form>
 		</wa-card>
 		<wa-card class="panel">
@@ -60,26 +139,51 @@ templ AddPage(p Page, jobs []db.Job, freeBytes uint64, defaultSeconds int) {
 }
 
 templ JobList(jobs []db.Job) {
-	<div id="jobs" class="rows jobs" hx-get="/jobs" hx-trigger="job from:body, jobsChanged from:body" hx-swap="outerMorph">
+	<div
+		id="jobs"
+		class="rows jobs"
+		hx-get="/jobs"
+		hx-trigger="job from:body, jobsChanged from:body"
+		hx-swap="outerMorph"
+	>
 		if len(jobs) == 0 {
 			<div class="empty">{ t(ctx, "Nothing added yet.") }</div>
 		}
 		for _, j := range jobs {
 			<div id={ "job-" + itoa(j.ID) }>
-				<wa-tag size="s" variant={ jobVariant(j.State) } appearance="filled">{ t(ctx, jobStateLabel(j)) }</wa-tag>
+				<wa-tag
+					size="s"
+					variant={ jobVariant(j.State) }
+					appearance="filled"
+				>
+					{ t(ctx, jobStateLabel(j)) }
+				</wa-tag>
 				<span class="name" title={ jobName(j) }>
 					{ jobName(j) }
 					<span class="wa-caption-xs">· { j.Source }</span>
 				</span>
 				if j.State == "running" {
-					<wa-progress-bar value={ itoa(j.Progress) } style={ barStyle(itoa(j.Progress), "") } class="num">{ itoa(j.Progress) } %</wa-progress-bar>
+					<wa-progress-bar
+						value={ itoa(j.Progress) }
+						style={ barStyle(itoa(j.Progress), "") }
+						class="num"
+					>
+						{ itoa(j.Progress) } %
+					</wa-progress-bar>
 				} else {
 					<span class="wa-caption-xs num">{ shortTime(ctx, j.UpdatedAt) }</span>
 				}
 				<span class="cancel">
 					if j.State == "queued" || j.State == "running" {
-						<wa-button id={ "cancel-" + itoa(j.ID) } size="s" appearance="plain" variant="danger" hx-post={ "/jobs/" + itoa(j.ID) + "/cancel" } hx-swap="none"
-							hx-confirm={ t(ctx, "Cancel “%s” and delete the file?", jobName(j)) }>
+						<wa-button
+							id={ "cancel-" + itoa(j.ID) }
+							size="s"
+							appearance="plain"
+							variant="danger"
+							hx-post={ "/jobs/" + itoa(j.ID) + "/cancel" }
+							hx-swap="none"
+							hx-confirm={ t(ctx, "Cancel “%s” and delete the file?", jobName(j)) }
+						>
 							<wa-icon name="xmark" label={ t(ctx, "Cancel") }></wa-icon>
 						</wa-button>
 						<wa-tooltip for={ "cancel-" + itoa(j.ID) }>{ t(ctx, "Cancel") }</wa-tooltip>

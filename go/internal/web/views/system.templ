@@ -10,12 +10,22 @@ import (
 templ SystemPage(p Page, si sysinfo.Info, mediaBytes int64, events []db.Event, accessURL, fingerprint string) {
 	@Layout(p) {
 		@PageHead("System") {
-			<wa-button class="disturbs" size="s" hx-post="/player/restart" hx-swap="none"
-				hx-confirm={ t(ctx, "Restart the player? Playback starts over from the first entry. For a frozen picture or a player that doesn't react.") }>
+			<wa-button
+				class="disturbs"
+				size="s"
+				hx-post="/player/restart"
+				hx-swap="none"
+				hx-confirm={ t(ctx, "Restart the player? Playback starts over from the first entry. For a frozen picture or a player that doesn't react.") }
+			>
 				<wa-icon slot="start" name="rotate"></wa-icon> { t(ctx, "Restart player") }
 			</wa-button>
-			<wa-button class="disturbs" size="s" hx-post="/system/restart" hx-swap="none"
-				hx-confirm={ t(ctx, "Restart the whole service? The screen goes dark for a few seconds and playback starts over; a running conversion or download starts over too.") }>
+			<wa-button
+				class="disturbs"
+				size="s"
+				hx-post="/system/restart"
+				hx-swap="none"
+				hx-confirm={ t(ctx, "Restart the whole service? The screen goes dark for a few seconds and playback starts over; a running conversion or download starts over too.") }
+			>
 				<wa-icon slot="start" name="power-off"></wa-icon> { t(ctx, "Restart service") }
 			</wa-button>
 		}
@@ -33,7 +43,10 @@ templ SystemPage(p Page, si sysinfo.Info, mediaBytes int64, events []db.Event, a
 templ statCard(icon, label string) {
 	<wa-card>
 		<div class="wa-flank wa-gap-s">
-			<wa-icon name={ icon } style="font-size: var(--wa-font-size-xl); color: var(--wa-color-brand-on-quiet);"></wa-icon>
+			<wa-icon
+				name={ icon }
+				style="font-size: var(--wa-font-size-xl); color: var(--wa-color-brand-on-quiet);"
+			></wa-icon>
 			<div class="wa-stack wa-gap-3xs stat">
 				<span class="wa-caption-xs">{ t(ctx, label) }</span>
 				{ children... }
@@ -43,11 +56,21 @@ templ statCard(icon, label string) {
 }
 
 templ SystemStats(si sysinfo.Info, mediaBytes int64) {
-	<div id="stats" class="wa-grid wa-gap-s" style="--min-column-size: 13rem;" hx-get="/system/stats" hx-trigger="every 10s, job from:body" hx-swap="outerMorph">
+	<div
+		id="stats"
+		class="wa-grid wa-gap-s"
+		style="--min-column-size: 13rem;"
+		hx-get="/system/stats"
+		hx-trigger="every 10s, job from:body"
+		hx-swap="outerMorph"
+	>
 		@statCard("hard-drive", "Free storage") {
 			if si.DiskTotal > 0 {
 				<span class="wa-heading-m"><wa-format-bytes value={ itoa(int64(si.DiskFree)) }></wa-format-bytes></span>
-				<wa-progress-bar value={ itoa(int64(100 - si.DiskFree*100/si.DiskTotal)) } style={ barStyle(itoa(int64(100 - si.DiskFree*100/si.DiskTotal)), " --track-height: 4px;") }></wa-progress-bar>
+				<wa-progress-bar
+					value={ itoa(int64(100 - si.DiskFree*100/si.DiskTotal)) }
+					style={ barStyle(itoa(int64(100-si.DiskFree*100/si.DiskTotal)), " --track-height: 4px;") }
+				></wa-progress-bar>
 				<span class="wa-caption-xs">{ t(ctx, "of") } <wa-format-bytes value={ itoa(int64(si.DiskTotal)) }></wa-format-bytes> · { t(ctx, "media") } <wa-format-bytes value={ itoa(mediaBytes) }></wa-format-bytes></span>
 			} else {
 				<span class="wa-heading-m">–</span>
@@ -94,16 +117,35 @@ templ SystemStats(si sysinfo.Info, mediaBytes int64) {
 templ throttleState(si sysinfo.Info) {
 	if si.UnderVoltageNow() || si.UnderVoltageEarlier() || si.SlowedNow() {
 		<span class="stat-badges">
-			switch {
+			switch  {
 				case si.UnderVoltageNow():
-					<wa-tag id="tag-power" size="xs" variant="danger">{ t(ctx, "Weak power") }</wa-tag>
+					<wa-tag
+						id="tag-power"
+						size="xs"
+						variant="danger"
+					>
+						{ t(ctx, "Weak power") }
+					</wa-tag>
 					<wa-tooltip for="tag-power">{ t(ctx, "Power supply too weak – check the power adapter") }</wa-tooltip>
 				case si.UnderVoltageEarlier():
-					<wa-tag id="tag-power" size="xs" variant="danger" appearance="outlined">{ t(ctx, "Weak power") }</wa-tag>
+					<wa-tag
+						id="tag-power"
+						size="xs"
+						variant="danger"
+						appearance="outlined"
+					>
+						{ t(ctx, "Weak power") }
+					</wa-tag>
 					<wa-tooltip for="tag-power">{ t(ctx, "Power supply was too weak – check the power adapter") }</wa-tooltip>
 			}
 			if si.SlowedNow() {
-				<wa-tag id="tag-slow" size="xs" variant="warning">{ t(ctx, "Slowed") }</wa-tag>
+				<wa-tag
+					id="tag-slow"
+					size="xs"
+					variant="warning"
+				>
+					{ t(ctx, "Slowed") }
+				</wa-tag>
 				<wa-tooltip for="tag-slow">{ t(ctx, "Running a bit slower right now (warm)") }</wa-tooltip>
 			}
 		</span>
@@ -111,7 +153,13 @@ templ throttleState(si sysinfo.Info) {
 }
 
 templ EventLog(events []db.Event) {
-	<div id="log" class="rows log" hx-get="/system/log" hx-trigger="log from:body" hx-swap="outerMorph">
+	<div
+		id="log"
+		class="rows log"
+		hx-get="/system/log"
+		hx-trigger="log from:body"
+		hx-swap="outerMorph"
+	>
 		if len(events) == 0 {
 			<div class="empty">{ t(ctx, "No entries.") }</div>
 		}
@@ -127,7 +175,12 @@ templ EventLog(events []db.Event) {
 
 // UpgradeCardLoading is replaced by UpgradeCard: asking GitHub takes a moment.
 templ UpgradeCardLoading() {
-	<wa-card id="upgrade" hx-get="/system/upgrade" hx-trigger="load" hx-swap="outerHTML">
+	<wa-card
+		id="upgrade"
+		hx-get="/system/upgrade"
+		hx-trigger="load"
+		hx-swap="outerHTML"
+	>
 		<div class="wa-stack wa-gap-3xs">
 			<span class="wa-caption-xs">Flimmerkiste</span>
 			<wa-spinner></wa-spinner>
@@ -144,12 +197,18 @@ templ UpgradeCard(info core.UpgradeInfo, msg string) {
 			<div class="wa-stack wa-gap-3xs">
 				<span class="wa-caption-xs">Flimmerkiste</span>
 				<span class="num">{ info.Current }</span>
-				switch {
+				switch  {
 					case msg != "":
 						<span class="wa-caption-xs">{ msg }</span>
 					case info.Newer:
 						<span class="wa-caption-xs">
-							<a href={ templ.URL(info.URL) } target="_blank" rel="noopener">{ t(ctx, "%s is available", info.Latest) }</a>
+							<a
+								href={ templ.URL(info.URL) }
+								target="_blank"
+								rel="noopener"
+							>
+								{ t(ctx, "%s is available", info.Latest) }
+							</a>
 						</span>
 					default:
 						<span class="wa-caption-xs"><wa-icon name="circle-check"></wa-icon> { t(ctx, "Up to date") }</span>
@@ -160,12 +219,26 @@ templ UpgradeCard(info core.UpgradeInfo, msg string) {
 			</div>
 			<div class="wa-cluster wa-gap-xs">
 				<wa-spinner id="upgrade-busy" class="htmx-indicator"></wa-spinner>
-				<wa-button size="s" appearance="plain" hx-get="/system/upgrade?check=1" hx-target="#upgrade" hx-swap="outerHTML" hx-indicator="#upgrade-busy">
+				<wa-button
+					size="s"
+					appearance="plain"
+					hx-get="/system/upgrade?check=1"
+					hx-target="#upgrade"
+					hx-swap="outerHTML"
+					hx-indicator="#upgrade-busy"
+				>
 					<wa-icon slot="start" name="rotate"></wa-icon> { t(ctx, "Check again") }
 				</wa-button>
 				if msg == "" && info.Newer && info.CanInstall {
-					<wa-button class="disturbs" size="s" variant="brand" hx-post="/system/upgrade" hx-swap="none" hx-indicator="#upgrade-busy"
-						hx-confirm={ t(ctx, "Install %s now? Flimmerkiste restarts: the screen goes dark for a few seconds and playback starts over; a running conversion or download starts over too.", info.Latest) }>
+					<wa-button
+						class="disturbs"
+						size="s"
+						variant="brand"
+						hx-post="/system/upgrade"
+						hx-swap="none"
+						hx-indicator="#upgrade-busy"
+						hx-confirm={ t(ctx, "Install %s now? Flimmerkiste restarts: the screen goes dark for a few seconds and playback starts over; a running conversion or download starts over too.", info.Latest) }
+					>
 						<wa-icon slot="start" name="download"></wa-icon> { t(ctx, "Install %s", info.Latest) }
 					</wa-button>
 				}
@@ -178,7 +251,12 @@ templ UpgradeCard(info core.UpgradeInfo, msg string) {
 // yt-dlp for its version takes about 5 s on a Pi 3B+ (it unpacks itself on
 // every start), so the page doesn't wait for it.
 templ YtDlpCardLoading() {
-	<wa-card id="ytdlp" hx-get="/system/ytdlp" hx-trigger="load" hx-swap="outerHTML">
+	<wa-card
+		id="ytdlp"
+		hx-get="/system/ytdlp"
+		hx-trigger="load"
+		hx-swap="outerHTML"
+	>
 		<div class="wa-stack wa-gap-3xs">
 			<span class="wa-caption-xs">{ t(ctx, "Downloader (yt-dlp)") }</span>
 			<wa-spinner></wa-spinner>
@@ -200,7 +278,13 @@ templ YtDlpCard(version string) {
 			if version != "" {
 				<div class="wa-cluster wa-gap-xs">
 					<wa-spinner id="ytdlp-updating" class="htmx-indicator"></wa-spinner>
-					<wa-button size="s" hx-post="/system/ytdlp-update" hx-target="#ytdlp" hx-swap="outerHTML" hx-indicator="#ytdlp-updating">
+					<wa-button
+						size="s"
+						hx-post="/system/ytdlp-update"
+						hx-target="#ytdlp"
+						hx-swap="outerHTML"
+						hx-indicator="#ytdlp-updating"
+					>
 						<wa-icon slot="start" name="rotate"></wa-icon> { t(ctx, "Update") }
 					</wa-button>
 				</div>
@@ -214,7 +298,12 @@ templ AccessCard(url, fingerprint string) {
 	<wa-card>
 		<div class="access">
 			if url != "" {
-				<img src="/qr.png" alt={ t(ctx, "QR code for %s", url) } width="132" height="132"/>
+				<img
+					src="/qr.png"
+					alt={ t(ctx, "QR code for %s", url) }
+					width="132"
+					height="132"
+				/>
 			}
 			<div class="wa-stack wa-gap-xs">
 				<span class="wa-caption-xs">{ t(ctx, "Web interface on the local network") }</span>
@@ -229,7 +318,12 @@ templ AccessCard(url, fingerprint string) {
 				}
 				if url != "" {
 					<div>
-						<wa-button class="disturbs" size="s" hx-post="/player/qr" hx-swap="none">
+						<wa-button
+							class="disturbs"
+							size="s"
+							hx-post="/player/qr"
+							hx-swap="none"
+						>
 							<wa-icon slot="start" name="qrcode"></wa-icon> { t(ctx, "Show on screen") }
 						</wa-button>
 					</div>

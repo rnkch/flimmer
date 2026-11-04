@@ -20,24 +20,75 @@ templ SettingsPage(p Page, s Settings) {
 			</wa-card>
 			<wa-card>
 				<div slot="header" class="wa-heading-s">{ t(ctx, "Processing") }</div>
-				<form class="wa-stack wa-gap-m" hx-post="/settings" hx-swap="none">
-					<input type="hidden" name="section" value="processing"/>
-					<wa-number-input class="field-s" name="video_bitrate_k" label={ t(ctx, "Video bitrate") } hint={ t(ctx, "For new uploads") } min="200" max="20000" step="100" size="s" without-steppers value={ itoa(s.BitrateK) }>
+				<form
+					class="wa-stack wa-gap-m"
+					hx-post="/settings"
+					hx-swap="none"
+				>
+					<input
+						type="hidden"
+						name="section"
+						value="processing"
+					/>
+					<wa-number-input
+						class="field-s"
+						name="video_bitrate_k"
+						label={ t(ctx, "Video bitrate") }
+						hint={ t(ctx, "For new uploads") }
+						min="200"
+						max="20000"
+						step="100"
+						size="s"
+						without-steppers
+						value={ itoa(s.BitrateK) }
+					>
 						<span slot="end">kbit/s</span>
 					</wa-number-input>
-					<wa-number-input class="field-s" name="image_duration_default" label={ t(ctx, "Display duration for images") } hint={ t(ctx, "When none is given") } min="1" max="3600" size="s" value={ itoa(s.ImageDuration) }>
+					<wa-number-input
+						class="field-s"
+						name="image_duration_default"
+						label={ t(ctx, "Display duration for images") }
+						hint={ t(ctx, "When none is given") }
+						min="1"
+						max="3600"
+						size="s"
+						value={ itoa(s.ImageDuration) }
+					>
 						<span slot="end">s</span>
 					</wa-number-input>
 					<div>
-						<wa-button type="submit" variant="brand" size="s">{ t(ctx, "Save") }</wa-button>
+						<wa-button
+							type="submit"
+							variant="brand"
+							size="s"
+						>
+							{ t(ctx, "Save") }
+						</wa-button>
 					</div>
 				</form>
 			</wa-card>
 			<wa-card>
 				<div slot="header" class="wa-heading-s">{ t(ctx, "Debug and output") }</div>
-				<form class="wa-stack wa-gap-s" hx-post="/settings" hx-trigger="change" hx-swap="none">
-					<input type="hidden" name="section" value="display"/>
-					<wa-switch name="debug" value="true" size="s" checked?={ s.Debug } hint={ t(ctx, "Extra messages in the Telegram chat") }>{ t(ctx, "Debug mode") }</wa-switch>
+				<form
+					class="wa-stack wa-gap-s"
+					hx-post="/settings"
+					hx-trigger="change"
+					hx-swap="none"
+				>
+					<input
+						type="hidden"
+						name="section"
+						value="display"
+					/>
+					<wa-switch
+						name="debug"
+						value="true"
+						size="s"
+						checked?={ s.Debug }
+						hint={ t(ctx, "Extra messages in the Telegram chat") }
+					>
+						{ t(ctx, "Debug mode") }
+					</wa-switch>
 					<span class="wa-caption-xs">
 						{ t(ctx, "Output:") }
 						if s.HDMI {
@@ -59,19 +110,57 @@ templ SettingsPage(p Page, s Settings) {
 templ HelpForm(help string) {
 	<wa-card id="help-card">
 		<div slot="header" class="wa-heading-s">{ t(ctx, "Help text") }</div>
-		<form class="wa-stack wa-gap-s" hx-post="/settings" hx-target="#help-card" hx-swap="outerHTML">
-			<input type="hidden" name="section" value="help"/>
-			<wa-textarea name="help_text" aria-label={ t(ctx, "Help text") } hint={ t(ctx, "Telegram /help and welcome message for new members. Empty restores the default.") } rows="8" resize="auto" size="s" value={ help }></wa-textarea>
+		<form
+			class="wa-stack wa-gap-s"
+			hx-post="/settings"
+			hx-target="#help-card"
+			hx-swap="outerHTML"
+		>
+			<input
+				type="hidden"
+				name="section"
+				value="help"
+			/>
+			<wa-textarea
+				name="help_text"
+				aria-label={ t(ctx, "Help text") }
+				hint={ t(ctx, "Telegram /help and welcome message for new members. Empty restores the default.") }
+				rows="8"
+				resize="auto"
+				size="s"
+				value={ help }
+			></wa-textarea>
 			<div>
-				<wa-button type="submit" variant="brand" size="s">{ t(ctx, "Save") }</wa-button>
+				<wa-button
+					type="submit"
+					variant="brand"
+					size="s"
+				>
+					{ t(ctx, "Save") }
+				</wa-button>
 			</div>
 		</form>
 	</wa-card>
 }
 
 templ PasswordForm() {
-	<form class="wa-stack wa-gap-m" hx-post="/settings/password" hx-swap="none">
-		<wa-input class="field-m" type="password" name="password" label={ t(ctx, "New password for the web UI") } hint={ t(ctx, "At least 8 characters. Logs out every session.") } password-toggle required minlength="8" autocomplete="new-password" size="s"></wa-input>
+	<form
+		class="wa-stack wa-gap-m"
+		hx-post="/settings/password"
+		hx-swap="none"
+	>
+		<wa-input
+			class="field-m"
+			type="password"
+			name="password"
+			label={ t(ctx, "New password for the web UI") }
+			hint={ t(ctx, "At least 8 characters. Logs out every session.") }
+			password-toggle
+			required
+			minlength="8"
+			autocomplete="new-password"
+			size="s"
+		></wa-input>
 		<div>
 			<wa-button type="submit" size="s"><wa-icon slot="start" name="key"></wa-icon> { t(ctx, "Change") }</wa-button>
 		</div>

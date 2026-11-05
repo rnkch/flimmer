@@ -163,7 +163,10 @@ func run(
 		Nmcli:         strings.Fields(nmcli),
 		FallbackWifi:  fallbackWifi,
 	}
-	mpvBase := []string{"--loop-playlist=inf", "--image-display-duration=5"}
+	// An image is drawn once. With mpv's default queue of 3 frames on DRM, that frame waited
+	// until the next entry was drawn, so the screen showed every image one entry late.
+	// Here and not in mpv.conf: a web upgrade replaces only the binary.
+	mpvBase := []string{"--loop-playlist=inf", "--image-display-duration=5", "--swapchain-depth=1"}
 	// mpv runs yt-dlp itself for web links; at a low priority, or playback stutters meanwhile.
 	if wrapper, err := core.YtDlpNiceWrapper(dataDir); err != nil {
 		slog.Warn("yt-dlp priority wrapper", "err", err)

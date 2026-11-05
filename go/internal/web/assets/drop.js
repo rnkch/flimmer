@@ -6,6 +6,7 @@ import { refreshPlaylist } from './live.js';
 // same drag events but carries no files, so the two don't collide.
 export function initDropUpload() {
   let marked = null;
+  let frozen = null; // the list this file drag froze, if any
 
   const hasFiles = (e) => [...(e.dataTransfer?.types ?? [])].includes('Files');
   const zoneOf = (e) => e.target.closest?.('[data-dropzone]');
@@ -17,14 +18,17 @@ export function initDropUpload() {
   }
 
   // The list is frozen for live updates (hx-morph-skip) while files hover over it: a morph
-  // would remove the drop markers. unmark() lifts it and asks for the update it skipped.
+  // would remove the drop markers. unmark() lifts it and asks for the update it skipped. It
+  // only lifts its own freeze: a row drag freezes the list too (sortable.js), and lifting that
+  // would morph the rows back under the pointer.
   function unmark() {
     mark(null);
     document.querySelectorAll('[data-dropzone].dropping').forEach((z) => z.classList.remove('dropping'));
-    document.querySelectorAll('[data-sortable][hx-morph-skip]').forEach((list) => {
-      list.removeAttribute('hx-morph-skip');
+    if (frozen) {
+      frozen.removeAttribute('hx-morph-skip');
+      frozen = null;
       refreshPlaylist();
-    });
+    }
   }
 
   // 1-based playlist position under the pointer; 0 = append.
@@ -47,11 +51,15 @@ export function initDropUpload() {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
     zone.classList.add('dropping');
-    zone.querySelector('[data-sortable]')?.setAttribute('hx-morph-skip', '');
+    if (!frozen) {
+      frozen = zone.querySelector('[data-sortable]');
+      frozen?.setAttribute('hx-morph-skip', '');
+    }
     positionAt(zone, e);
   });
 
   document.addEventListener('dragleave', (e) => {
+    if (!hasFiles(e)) return;
     if (!e.relatedTarget || !zoneOf({ target: e.relatedTarget })) unmark();
   });
 
